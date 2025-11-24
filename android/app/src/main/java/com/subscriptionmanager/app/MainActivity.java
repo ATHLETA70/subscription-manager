@@ -1,0 +1,5 @@
+package com.subscriptionmanager.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}
