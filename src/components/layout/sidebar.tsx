@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, CreditCard, Settings, Bell, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { userPlan } from "@/lib/mock-data";
+import { userPlan } from "@/lib/user-plan";
 
 const navItems = [
     { name: "ダッシュボード", href: "/dashboard", icon: Home },
@@ -54,7 +54,7 @@ export function Sidebar() {
                             無制限の登録と高度な分析機能
                         </p>
                         <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors">
-                            アップグレード (¥200/月)
+                            アップグレード (¥{userPlan.price}/月)
                         </button>
                     </div>
                 )}

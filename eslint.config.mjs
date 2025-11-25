@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Additional ignores for mobile builds and scripts:
+    "ios/**",
+    "android/**",
+    "scripts/**",
+    "node_modules/**",
   ]),
 ]);
 

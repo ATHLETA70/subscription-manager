@@ -261,17 +261,21 @@ export async function updateCancellationUrl(
     const normalizedName = normalizeServiceName(serviceName);
 
     try {
+        // Use upsert to handle both insert and update cases
         const { error } = await supabase
             .from("service_cancellation_info")
-            .update({
+            .upsert({
+                service_name: normalizedName,
                 cancellation_url: newUrl,
                 user_verified: verified,
                 verification_count: verified ? 1 : 0,
                 updated_at: new Date().toISOString(),
-            })
-            .eq("service_name", normalizedName);
+            }, { onConflict: 'service_name', ignoreDuplicates: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("[Update Cancellation URL] Database Error:", error);
+            throw error;
+        }
         return true;
     } catch (error) {
         console.error("[Update URL] Error:", error);

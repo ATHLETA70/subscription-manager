@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { Subscription } from "@/types/subscription";
+
 interface CalendarTooltipProps {
     children: React.ReactNode;
-    subscriptions: any[];
+    subscriptions: Subscription[];
 }
 
 export function CalendarTooltip({ children, subscriptions }: CalendarTooltipProps) {

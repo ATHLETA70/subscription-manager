@@ -2,6 +2,8 @@
  * カレンダー関連のユーティリティ関数
  */
 
+import { Subscription } from "@/types/subscription";
+
 export interface CalendarDay {
     date: Date;
     day: number;
@@ -89,21 +91,6 @@ export function formatDateYMD(date: Date): string {
 /**
  * 指定された日付のサブスクリプションを取得
  */
-export interface Subscription {
-    id: string | number;
-    name: string;
-    status: string;
-    amount?: number;
-    category?: string;
-    nextBilling?: string;
-    next_payment_date?: string;
-    first_payment_date?: string;
-    startDate?: string;
-    cycle?: string;
-    image_url?: string;
-    memo?: string;
-}
-
 export function getSubscriptionsForDate(
     date: Date,
     subscriptions: Subscription[]

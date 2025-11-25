@@ -7,8 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+import { Subscription } from "@/types/subscription";
+
 interface SubscriptionCancellationCandidatesProps {
-    subscriptions: any[];
+    subscriptions: Subscription[];
     onUpdate?: () => Promise<void>;
 }
 
@@ -26,93 +28,13 @@ export function SubscriptionCancellationCandidates({ subscriptions, onUpdate }: 
     const candidates = activeSubs.filter(sub => duplicateCategories.includes(sub.category));
 
     const router = useRouter();
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isUpdating, setIsUpdating] = useState(false);
-
-    const toggleSelectAll = () => {
-        if (selectedIds.length === candidates.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(candidates.map(sub => sub.id));
-        }
-    };
-
-    const toggleSelect = (id: string) => {
-        if (selectedIds.includes(id)) {
-            setSelectedIds(selectedIds.filter(sId => sId !== id));
-        } else {
-            setSelectedIds([...selectedIds, id]);
-        }
-    };
-
-    const handleBulkUpdate = async (status: string) => {
-        if (!confirm(`${selectedIds.length}件のサブスクリプションのステータスを変更しますか？`)) return;
-
-        setIsUpdating(true);
-        try {
-            const supabase = createClient();
-            const { error, data } = await supabase
-                .from('subscriptions')
-                .update({ status })
-                .in('id', selectedIds)
-                .select();
-
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                throw new Error("更新対象が見つかりませんでした。権限がないか、データが存在しません。");
-            }
-
-            toast.success("ステータスを更新しました");
-            setSelectedIds([]);
-
-            // データを再取得
-            if (onUpdate) {
-                await onUpdate();
-            } else {
-                router.refresh();
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("更新に失敗しました");
-        } finally {
-            setIsUpdating(false);
-        }
-    };
 
     if (candidates.length === 0) return null;
 
     return (
         <div className="space-y-4 relative">
-            {/* Loading Overlay */}
-            {isUpdating && (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-                    <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl border shadow-lg">
-                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-sm font-medium">更新中...</p>
-                    </div>
-                </div>
-            )}
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold tracking-tight text-pink-500">解約候補のサブスクリプション</h2>
-                {selectedIds.length > 0 && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
-                        <span className="text-sm text-muted-foreground">{selectedIds.length}件選択中</span>
-                        <select
-                            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                            onChange={(e) => {
-                                if (e.target.value) handleBulkUpdate(e.target.value);
-                                e.target.value = "";
-                            }}
-                            disabled={isUpdating}
-                        >
-                            <option value="">ステータス変更...</option>
-                            <option value="active">有効にする</option>
-                            <option value="paused">一時停止</option>
-                            <option value="cancelled">解約済みにする</option>
-                        </select>
-                    </div>
-                )}
             </div>
 
             {/* Mobile View (Cards) */}
@@ -157,15 +79,7 @@ export function SubscriptionCancellationCandidates({ subscriptions, onUpdate }: 
             {/* Desktop View (Grid-based Table) */}
             <div className="hidden md:block rounded-xl border border-pink-500/20 bg-pink-500/5 shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="grid grid-cols-[40px_2fr_1.2fr_1fr_1fr_1.2fr_1fr_1.2fr] gap-4 px-6 py-3 bg-pink-500/10 text-muted-foreground font-medium text-sm border-b border-pink-500/20">
-                    <div className="flex items-center justify-center">
-                        <input
-                            type="checkbox"
-                            className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
-                            checked={candidates.length > 0 && selectedIds.length === candidates.length}
-                            onChange={toggleSelectAll}
-                        />
-                    </div>
+                <div className="grid grid-cols-[2fr_1.2fr_1fr_1fr_1.2fr_1fr_1.2fr] gap-4 px-6 py-3 bg-pink-500/10 text-muted-foreground font-medium text-sm border-b border-pink-500/20">
                     <div>サービス名</div>
                     <div>カテゴリ</div>
                     <div>金額</div>
@@ -177,18 +91,7 @@ export function SubscriptionCancellationCandidates({ subscriptions, onUpdate }: 
                 {/* Body */}
                 <div className="divide-y divide-pink-500/10">
                     {candidates.map((sub) => (
-                        <div key={sub.id} className={cn(
-                            "grid grid-cols-[40px_2fr_1.2fr_1fr_1fr_1.2fr_1fr_1.2fr] gap-4 px-6 py-4 hover:bg-pink-500/10 transition-colors group items-center text-sm",
-                            selectedIds.includes(sub.id) && "bg-pink-500/10"
-                        )}>
-                            <div className="flex items-center justify-center">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
-                                    checked={selectedIds.includes(sub.id)}
-                                    onChange={() => toggleSelect(sub.id)}
-                                />
-                            </div>
+                        <div key={sub.id} className="grid grid-cols-[2fr_1.2fr_1fr_1fr_1.2fr_1fr_1.2fr] gap-4 px-6 py-4 hover:bg-pink-500/10 transition-colors group items-center text-sm">
                             <Link href={`/subscriptions/${sub.id}`} className="flex items-center gap-3">
                                 {sub.image_url ? (
                                     <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-pink-500/20 shrink-0 p-1.5">

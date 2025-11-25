@@ -1,7 +1,9 @@
 import { DollarSign, TrendingUp, CreditCard, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function DashboardStats({ subscriptions }: { subscriptions: any[] }) {
+import { Subscription } from "@/types/subscription";
+
+export function DashboardStats({ subscriptions }: { subscriptions: Subscription[] }) {
     // Calculate stats dynamically
     const activeSubs = subscriptions.filter(sub => sub.status === "active" || sub.status === "利用中");
     const monthlyTotal = activeSubs.reduce((acc, sub) => {

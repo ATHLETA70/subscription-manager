@@ -1,24 +1,48 @@
 "use client";
 
-import { User, CreditCard, Check, Zap, Palette } from "lucide-react";
+import { User, CreditCard, Check, Zap, Palette, Bell } from "lucide-react";
 import { ThemeSelector } from "@/components/settings/theme-selector";
 import { createClient } from "@/lib/supabase/client";
-import { userPlan } from "@/lib/mock-data";
+import { userPlan } from "@/lib/user-plan";
 import { useEffect, useState } from "react";
+import { getNotificationPreferences, updateNotificationPreferences } from "@/actions/notifications";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [daysBeforeBilling, setDaysBeforeBilling] = useState(7);
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      // Fetch notification preferences
+      const preferences = await getNotificationPreferences();
+      if (preferences) {
+        setDaysBeforeBilling(preferences.days_before_billing);
+      }
+
       setLoading(false);
     }
     fetchUser();
   }, []);
+
+  const handleSaveNotificationSettings = async () => {
+    setSavingNotifications(true);
+    const result = await updateNotificationPreferences(daysBeforeBilling, false);
+
+    if (result.success) {
+      toast.success("通知設定を保存しました");
+    } else {
+      toast.error(result.error || "保存に失敗しました");
+    }
+
+    setSavingNotifications(false);
+  };
 
   if (loading) {
     return <div className="p-8 text-center">読み込み中...</div>;
@@ -55,6 +79,43 @@ export default function SettingsPage() {
         </h2>
         <div className="p-6 rounded-xl border bg-card">
           <ThemeSelector />
+        </div>
+      </section>
+
+      {/* Notification Settings Section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Bell className="w-5 h-5" />
+          通知設定
+        </h2>
+        <div className="p-6 rounded-xl border bg-card space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="daysBeforeBilling" className="text-sm font-medium">
+              請求日の何日前に通知しますか？
+            </label>
+            <p className="text-xs text-muted-foreground">
+              設定した日数前になると、通知ページにサブスクリプションが表示されます。
+            </p>
+            <select
+              id="daysBeforeBilling"
+              value={daysBeforeBilling}
+              onChange={(e) => setDaysBeforeBilling(parseInt(e.target.value))}
+              className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="3">3日前</option>
+              <option value="7">7日前</option>
+              <option value="14">14日前</option>
+              <option value="30">30日前</option>
+            </select>
+          </div>
+
+          <button
+            onClick={handleSaveNotificationSettings}
+            disabled={savingNotifications}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            {savingNotifications ? "保存中..." : "設定を保存"}
+          </button>
         </div>
       </section>
 
@@ -121,7 +182,7 @@ export default function SettingsPage() {
             </div>
 
             <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors relative z-10">
-              プランを変更する (¥200/月)
+              プランを変更する (¥{userPlan.price}/月)
             </button>
           </div>
         </div>

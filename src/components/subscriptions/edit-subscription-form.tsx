@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-
-import { Subscription } from "@/lib/calendar-utils";
+import { Subscription } from "@/types/subscription";
 
 export function EditSubscriptionForm({ subscription }: { subscription: Subscription }) {
     const router = useRouter();
@@ -27,11 +26,19 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
         const category = formData.get("category") as string;
         const nextBillingDate = formData.get("nextBillingDate") as string;
         const status = formData.get("status") as string;
+        const memo = formData.get("memo") as string;
 
-        const amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
-
-        if (!name || !amount || !cycle || !category) {
+        // Validate required fields
+        if (!name || !amountStr || !cycle || !category) {
             setError("すべての必須フィールドを入力してください");
+            setLoading(false);
+            return;
+        }
+
+        // Parse amount safely
+        const amount = parseInt(amountStr.replace(/[^0-9]/g, "") || "0");
+        if (!amount || amount <= 0) {
+            setError("有効な金額を入力してください");
             setLoading(false);
             return;
         }
@@ -39,24 +46,45 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
         try {
             const supabase = createClient();
 
-            const { error: updateError } = await supabase
+            // Prepare update data
+            const updateData = {
+                name,
+                amount,
+                cycle,
+                category,
+                next_payment_date: nextBillingDate || null,
+                status,
+            };
+
+            // Add memo only if it exists in database (check migration)
+            if (memo) {
+                (updateData as Record<string, string | number | null>).memo = memo;
+            }
+
+            console.log("Updating subscription with ID:", subscription.id);
+            console.log("Update data:", updateData);
+
+            const { data, error: updateError } = await supabase
                 .from("subscriptions")
-                .update({
-                    name,
-                    amount,
-                    cycle,
-                    category,
-                    next_payment_date: nextBillingDate || subscription.next_payment_date,
-                    memo: formData.get("memo") as string,
-                    status: status || subscription.status,
-                })
-                .eq("id", subscription.id);
+                .update(updateData)
+                .eq("id", subscription.id)
+                .select();
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error("Update error details:", {
+                    message: updateError.message,
+                    details: updateError.details,
+                    hint: updateError.hint,
+                    code: updateError.code,
+                });
+                throw updateError;
+            }
 
+            console.log("Update successful:", data);
             router.push(`/subscriptions/detail?id=${subscription.id}`);
             router.refresh();
         } catch (err: unknown) {
+            console.error("Catch error:", err);
             const message = err instanceof Error ? err.message : "エラーが発生しました";
             setError(message);
             setLoading(false);
@@ -129,7 +157,7 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                                 name="amount"
                                 type="number"
                                 required
-                                defaultValue={subscription.amount}
+                                defaultValue={typeof subscription.amount === 'number' ? subscription.amount : parseInt(String(subscription.amount).replace(/[^0-9]/g, '') || '0')}
                                 placeholder="1000"
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             />
@@ -180,7 +208,7 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                             id="nextBillingDate"
                             name="nextBillingDate"
                             type="date"
-                            defaultValue={subscription.next_payment_date}
+                            defaultValue={subscription.next_payment_date || ""}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
@@ -206,13 +234,12 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                             defaultValue={subscription.status || 'active'}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <option value="active">有効</option>
+                            <option value="active">契約中</option>
                             <option value="trial">トライアル中</option>
-                            <option value="cancelled">解約済み</option>
-                            <option value="paused">一時停止</option>
+                            <option value="inactive">解約済み</option>
                             {/* If the current status is not in the standard list, add it as an option */}
                             {subscription.status && ![
-                                "active", "trial", "cancelled", "paused"
+                                "active", "trial", "inactive"
                             ].includes(subscription.status) && (
                                     <option value={subscription.status}>{subscription.status}</option>
                                 )}

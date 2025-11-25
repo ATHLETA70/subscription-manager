@@ -4,9 +4,11 @@ import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 
+import { Subscription } from "@/types/subscription";
+
 // ... (keep data calculation logic same as before) ...
 // Calculate category data
-export function DashboardCharts({ subscriptions }: { subscriptions: any[] }) {
+export function DashboardCharts({ subscriptions }: { subscriptions: Subscription[] }) {
     const [activeTab, setActiveTab] = useState<'service' | 'category_trend'>('service');
 
     // 1. Pie Chart Data: Active Subscriptions by Service Name
@@ -32,7 +34,7 @@ export function DashboardCharts({ subscriptions }: { subscriptions: any[] }) {
         { name: '11月', date: '2023-11-01' },
         { name: '12月', date: '2023-12-01' },
     ].map(month => {
-        const monthData: any = { name: month.name };
+        const monthData: Record<string, number | string> = { name: month.name };
 
         // Initialize all categories to 0
         categories.forEach(cat => {
@@ -41,12 +43,13 @@ export function DashboardCharts({ subscriptions }: { subscriptions: any[] }) {
 
         subscriptions.forEach(sub => {
             // Simple logic: if subscription started before this month, include it
-            if (sub.first_payment_date <= month.date && (!sub.end_date || sub.end_date >= month.date)) {
+            if (sub.first_payment_date && sub.first_payment_date <= month.date && (!sub.end_date || sub.end_date >= month.date)) {
                 const amount = typeof sub.amount === 'string' ? parseInt(sub.amount.replace(/[^0-9]/g, "")) : sub.amount;
                 const monthlyAmount = (sub.cycle === "月額" || sub.cycle === "monthly") ? amount : Math.round(amount / 12);
 
                 if (sub.category) {
-                    monthData[sub.category] += monthlyAmount;
+                    const currentAmount = typeof monthData[sub.category] === 'number' ? monthData[sub.category] as number : 0;
+                    monthData[sub.category] = currentAmount + monthlyAmount;
                 }
             }
         });
@@ -94,8 +97,15 @@ export function DashboardCharts({ subscriptions }: { subscriptions: any[] }) {
                                     outerRadius="70%"
                                     paddingAngle={2}
                                     dataKey="value"
-                                    label={({ cx, cy, midAngle, outerRadius, percent, fill }: any) => {
-                                        if (!midAngle || !percent) return null;
+                                    label={({ cx, cy, midAngle, outerRadius, percent, fill }: {
+                                        cx?: number;
+                                        cy?: number;
+                                        midAngle?: number;
+                                        outerRadius?: number;
+                                        percent?: number;
+                                        fill?: string;
+                                    }) => {
+                                        if (!midAngle || !percent || !cx || !cy || !outerRadius || !fill) return null;
                                         const RADIAN = Math.PI / 180;
                                         const radius = outerRadius + 25;
                                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -193,7 +203,7 @@ export function DashboardCharts({ subscriptions }: { subscriptions: any[] }) {
                                                     {payload[0].payload.name}
                                                 </p>
                                                 <div className="space-y-1.5">
-                                                    {payload.map((entry: any, index: number) => (
+                                                    {payload.map((entry: { name: string; value: number; color: string }, index: number) => (
                                                         <div key={index} className="flex items-center justify-between gap-4 text-xs">
                                                             <div className="flex items-center gap-2">
                                                                 <div

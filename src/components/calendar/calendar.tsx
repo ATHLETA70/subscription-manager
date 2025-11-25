@@ -10,11 +10,12 @@ import {
     getYearMonthDisplay,
 } from "@/lib/calendar-utils";
 import { CalendarTooltip } from "@/components/ui/calendar-tooltip";
+import { Subscription } from "@/types/subscription";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 // サブスクリプションアイコンコンポーネント
-function SubscriptionIcon({ subscription }: { subscription: any }) {
+function SubscriptionIcon({ subscription }: { subscription: Subscription }) {
     const [imageError, setImageError] = useState(false);
 
     return (
@@ -59,7 +60,7 @@ function SubscriptionIcon({ subscription }: { subscription: any }) {
     );
 }
 
-export function Calendar({ subscriptions }: { subscriptions: any[] }) {
+export function Calendar({ subscriptions }: { subscriptions: Subscription[] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -88,7 +89,7 @@ export function Calendar({ subscriptions }: { subscriptions: any[] }) {
             if (day.isCurrentMonth) {
                 const subs = getSubscriptionsForDate(day.date, activeSubscriptions);
                 subs.forEach((sub) => {
-                    const rawAmount = sub.amount as any;
+                    const rawAmount = sub.amount;
                     const amount = typeof rawAmount === 'string' ? parseInt(rawAmount.replace(/[^0-9]/g, "")) : (rawAmount || 0);
                     total += amount;
                 });

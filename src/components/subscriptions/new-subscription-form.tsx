@@ -7,8 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCancellationInfo } from "@/actions/cancellation";
-
-import { userPlan } from "@/lib/mock-data";
+import { userPlan } from "@/lib/user-plan";
 
 export function NewSubscriptionForm() {
     const router = useRouter();

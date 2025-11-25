@@ -2,12 +2,13 @@
 
 import { DashboardStats } from "@/components/dashboard/stats";
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
+import { Subscription } from "@/types/subscription";
 import { DashboardCharts } from "@/components/dashboard/charts";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 
 export default function DashboardPage() {
-    const [subscriptions, setSubscriptions] = useState<any[]>([]);
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {

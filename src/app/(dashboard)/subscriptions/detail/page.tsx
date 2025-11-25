@@ -3,12 +3,13 @@
 import { ArrowLeft, Calendar, FileText, Edit } from "lucide-react";
 import Link from "next/link";
 import { CancellationNav } from "@/components/cancellation/cancellation-nav";
-import { UpgradeAssistant } from "@/components/upgrade/upgrade-assistant";
+import { RegistrationNav } from "@/components/registration/registration-nav";
 import { createClient } from "@/lib/supabase/client";
 import { notFound, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
 import { getCancellationInfo, CancellationInfo } from "@/actions/cancellation";
+import { getRegistrationInfo, RegistrationInfo } from "@/actions/registration";
 import { toast } from "sonner";
 
 // Default fallback only
@@ -29,6 +30,7 @@ function SubscriptionDetailContent() {
     const [sub, setSub] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [cancellationData, setCancellationData] = useState<CancellationInfo | null>(null);
+    const [registrationData, setRegistrationData] = useState<RegistrationInfo | null>(null);
 
     useEffect(() => {
         async function fetchData() {
@@ -50,17 +52,32 @@ function SubscriptionDetailContent() {
 
             setSub(subData);
 
-            // 2. Fetch Cancellation Info (Dynamic)
-            try {
-                const info = await getCancellationInfo(subData.name);
-                if (info) {
-                    setCancellationData(info);
+            // 2. Fetch appropriate info based on status
+            const isInactive = subData.status === 'inactive' || subData.status === '解約中' || subData.status === '解約済';
+
+            if (isInactive) {
+                // Fetch registration info for cancelled subscriptions
+                try {
+                    const regInfo = await getRegistrationInfo(subData.name);
+                    if (regInfo) {
+                        setRegistrationData(regInfo);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch registration info:", err);
                 }
-            } catch (err) {
-                console.error("Failed to fetch cancellation info:", err);
-            } finally {
-                setLoading(false);
+            } else {
+                // Fetch cancellation info for active subscriptions
+                try {
+                    const info = await getCancellationInfo(subData.name);
+                    if (info) {
+                        setCancellationData(info);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch cancellation info:", err);
+                }
             }
+
+            setLoading(false);
         }
 
         fetchData();
@@ -234,10 +251,57 @@ function SubscriptionDetailContent() {
                         )}
                     </>
                 ) : isCancelled ? (
-                    // Show upgrade assistant for cancelled subscriptions
+                    // Show registration assistant for cancelled subscriptions
                     <>
-                        <h2 className="text-xl font-semibold mb-4">有料アシスタント</h2>
-                        <UpgradeAssistant serviceName={sub.name} />
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold">再登録アシスタント</h2>
+                            <button
+                                onClick={async () => {
+                                    const toastId = toast.loading("情報を更新中...");
+                                    try {
+                                        const { refreshRegistrationInfo } = await import("@/actions/registration");
+                                        const newData = await refreshRegistrationInfo(sub.name);
+                                        if (newData) {
+                                            setRegistrationData(newData);
+                                            toast.success("情報を更新しました", { id: toastId });
+                                        } else {
+                                            toast.error("情報の取得に失敗しました", { id: toastId });
+                                        }
+                                    } catch (e) {
+                                        toast.error("エラーが発生しました", { id: toastId });
+                                    }
+                                }}
+                                className="text-xs text-muted-foreground hover:text-primary underline"
+                            >
+                                情報が正しくないですか？再取得
+                            </button>
+                        </div>
+                        <RegistrationNav
+                            serviceName={sub.name}
+                            registrationUrl={registrationData?.registration_url || ""}
+                            hasFreeTrial={registrationData?.has_free_trial}
+                            trialPeriod={registrationData?.trial_period}
+                            notes={registrationData?.notes}
+                            onUpdateUrl={async (newUrl: string) => {
+                                const toastId = toast.loading("URLを更新中...");
+                                try {
+                                    const { updateRegistrationUrl } = await import("@/actions/registration");
+                                    const success = await updateRegistrationUrl(sub.name, newUrl);
+                                    if (success) {
+                                        setRegistrationData({
+                                            ...registrationData,
+                                            registration_url: newUrl,
+                                            user_verified: true,
+                                        } as RegistrationInfo);
+                                        toast.success("URLを更新しました", { id: toastId });
+                                    } else {
+                                        toast.error("更新に失敗しました", { id: toastId });
+                                    }
+                                } catch (e) {
+                                    toast.error("エラーが発生しました", { id: toastId });
+                                }
+                            }}
+                        />
                     </>
                 ) : null}
             </section>

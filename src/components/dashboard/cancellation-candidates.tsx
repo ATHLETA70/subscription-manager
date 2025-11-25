@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
+import { Subscription } from "@/types/subscription";
 
-export function CancellationCandidates({ subscriptions }: { subscriptions: any[] }) {
+export function CancellationCandidates({ subscriptions }: { subscriptions: Subscription[] }) {
     // Calculate subscriptions due within next 7 days
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -18,8 +19,9 @@ export function CancellationCandidates({ subscriptions }: { subscriptions: any[]
             return nextDate >= now && nextDate <= sevenDaysFromNow;
         })
         .sort((a, b) => {
-            const dateA = new Date(a.next_payment_date);
-            const dateB = new Date(b.next_payment_date);
+            // Type assertion safe because filter ensures next_payment_date is not null
+            const dateA = new Date(a.next_payment_date!);
+            const dateB = new Date(b.next_payment_date!);
             return dateA.getTime() - dateB.getTime();
         });
 
@@ -39,7 +41,7 @@ export function CancellationCandidates({ subscriptions }: { subscriptions: any[]
             <div className="grid gap-2 md:hidden">
                 {candidates.map((sub) => {
                     const daysUntil = Math.ceil(
-                        (new Date(sub.next_payment_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                        (new Date(sub.next_payment_date!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                     );
                     return (
                         <Link
@@ -93,7 +95,7 @@ export function CancellationCandidates({ subscriptions }: { subscriptions: any[]
                     <tbody className="divide-y divide-orange-500/10">
                         {candidates.map((sub) => {
                             const daysUntil = Math.ceil(
-                                (new Date(sub.next_payment_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                                (new Date(sub.next_payment_date!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                             );
                             return (
                                 <tr key={sub.id} className="hover:bg-orange-500/10 transition-colors group cursor-pointer">

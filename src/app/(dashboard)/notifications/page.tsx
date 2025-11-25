@@ -4,14 +4,24 @@ import { Bell, Calendar } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { getNotificationPreferences } from "@/actions/notifications";
 
 export default function NotificationsPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [daysBeforeBilling, setDaysBeforeBilling] = useState(7);
 
     useEffect(() => {
         async function fetchData() {
             const supabase = createClient();
+
+            // Fetch notification preferences
+            const preferences = await getNotificationPreferences();
+            if (preferences) {
+                setDaysBeforeBilling(preferences.days_before_billing);
+            }
+
+            // Fetch subscriptions
             const { data } = await supabase
                 .from('subscriptions')
                 .select('*');
@@ -40,7 +50,7 @@ export default function NotificationsPage() {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return { ...sub, diffDays };
         })
-        .filter(sub => sub.diffDays >= 0 && sub.diffDays <= 14) // Show notifications for next 14 days
+        .filter(sub => sub.diffDays >= 0 && sub.diffDays <= daysBeforeBilling) // Use user's preference
         .sort((a, b) => a.diffDays - b.diffDays);
 
     return (
