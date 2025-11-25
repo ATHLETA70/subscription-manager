@@ -4,27 +4,28 @@ import { DashboardStats } from "@/components/dashboard/stats";
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
 import { DashboardCharts } from "@/components/dashboard/charts";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export default function DashboardPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchData() {
-            const supabase = createClient();
-            const { data } = await supabase
-                .from('subscriptions')
-                .select('*')
-                .order('amount', { ascending: false });
+    const fetchData = useCallback(async () => {
+        const supabase = createClient();
+        const { data } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .order('amount', { ascending: false });
 
-            if (data) {
-                setSubscriptions(data);
-            }
-            setLoading(false);
+        if (data) {
+            setSubscriptions(data);
         }
-        fetchData();
+        setLoading(false);
     }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) {
         return <div className="p-8 text-center">読み込み中...</div>;
@@ -43,7 +44,7 @@ export default function DashboardPage() {
 
             <DashboardCharts subscriptions={subscriptions} />
 
-            <SubscriptionList subscriptions={subscriptions} />
+            <SubscriptionList subscriptions={subscriptions} onUpdate={fetchData} />
         </div>
     );
 }

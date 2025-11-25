@@ -51,7 +51,12 @@ function SubscriptionIcon({ sub }: { sub: any }) {
     );
 }
 
-export function SubscriptionList({ subscriptions }: { subscriptions: any[] }) {
+interface SubscriptionListProps {
+    subscriptions: any[];
+    onUpdate?: () => Promise<void>;
+}
+
+export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListProps) {
     const router = useRouter();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -91,26 +96,47 @@ export function SubscriptionList({ subscriptions }: { subscriptions: any[] }) {
         setIsUpdating(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase
+
+            const { error, data } = await supabase
                 .from('subscriptions')
                 .update({ status })
-                .in('id', selectedIds);
+                .in('id', selectedIds)
+                .select();
 
             if (error) throw error;
 
+            if (!data || data.length === 0) {
+                throw new Error("更新対象が見つかりませんでした。権限がないか、データが存在しません。");
+            }
+
             toast.success("ステータスを更新しました");
             setSelectedIds([]);
-            router.refresh();
+
+            // データを再取得
+            if (onUpdate) {
+                await onUpdate();
+            } else {
+                router.refresh();
+            }
         } catch (error) {
-            console.error(error);
-            toast.error("更新に失敗しました");
+            console.error('[Bulk Update] Error:', error);
+            toast.error(error instanceof Error ? error.message : "更新に失敗しました");
         } finally {
             setIsUpdating(false);
         }
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
+            {/* Loading Overlay */}
+            {isUpdating && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+                    <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl border shadow-lg">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-sm font-medium">更新中...</p>
+                    </div>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold tracking-tight">契約中のサブスクリプション</h2>
                 <div className="flex gap-2">
@@ -140,6 +166,26 @@ export function SubscriptionList({ subscriptions }: { subscriptions: any[] }) {
                         新規登録
                     </button>
                 </div>
+            </div>
+
+            {/* Debug/Fix Data Button (Temporary) */}
+            <div className="flex justify-end mb-2">
+                <button
+                    onClick={async () => {
+                        if (!confirm("データの所有権を修正しますか？\n(表示されないデータがある場合に有効です)")) return;
+                        const { fixSubscriptionOwnership } = await import("@/actions/fix-data");
+                        const result = await fixSubscriptionOwnership();
+                        if (result.success) {
+                            toast.success(`${result.count}件のデータを修正しました`);
+                            router.refresh();
+                        } else {
+                            toast.error(`修正に失敗しました: ${result.error}`);
+                        }
+                    }}
+                    className="text-xs text-muted-foreground hover:text-primary underline"
+                >
+                    データが表示されない/更新できない場合はこちら
+                </button>
             </div>
 
             {/* Mobile View (Cards) */}

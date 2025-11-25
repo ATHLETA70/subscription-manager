@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 
 interface CancelledSubscriptionsProps {
     subscriptions: any[];
+    onUpdate?: () => Promise<void>;
 }
 
-export function CancelledSubscriptions({ subscriptions }: CancelledSubscriptionsProps) {
+export function CancelledSubscriptions({ subscriptions, onUpdate }: CancelledSubscriptionsProps) {
     const router = useRouter();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -41,16 +42,31 @@ export function CancelledSubscriptions({ subscriptions }: CancelledSubscriptions
         setIsUpdating(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase
+            const { error, data } = await supabase
                 .from('subscriptions')
                 .update({ status })
-                .in('id', selectedIds);
+                .in('id', selectedIds)
+                .select();
 
             if (error) throw error;
 
+            if (!data || data.length === 0) {
+                throw new Error("更新対象が見つかりませんでした。権限がないか、データが存在しません。");
+            }
+
+            if (!data || data.length === 0) {
+                throw new Error("更新対象が見つかりませんでした。権限がないか、データが存在しません。");
+            }
+
             toast.success("ステータスを更新しました");
             setSelectedIds([]);
-            router.refresh();
+
+            // データを再取得
+            if (onUpdate) {
+                await onUpdate();
+            } else {
+                router.refresh();
+            }
         } catch (error) {
             console.error(error);
             toast.error("更新に失敗しました");
@@ -62,7 +78,16 @@ export function CancelledSubscriptions({ subscriptions }: CancelledSubscriptions
     if (cancelledSubs.length === 0) return null;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
+            {/* Loading Overlay */}
+            {isUpdating && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+                    <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl border shadow-lg">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-sm font-medium">更新中...</p>
+                    </div>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold tracking-tight text-gray-500">解約済みのサブスクリプション</h2>
                 {selectedIds.length > 0 && (

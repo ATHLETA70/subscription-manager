@@ -159,12 +159,18 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <option value="">カテゴリを選択</option>
-                            <option value="entertainment">エンタメ</option>
-                            <option value="music">音楽</option>
-                            <option value="productivity">仕事効率化</option>
-                            <option value="shopping">ショッピング</option>
-                            <option value="sports">スポーツ</option>
-                            <option value="other">その他</option>
+                            <option value="エンタメ">エンタメ</option>
+                            <option value="音楽">音楽</option>
+                            <option value="仕事効率化">仕事効率化</option>
+                            <option value="ショッピング">ショッピング</option>
+                            <option value="スポーツ">スポーツ</option>
+                            <option value="その他">その他</option>
+                            {/* If the current category is not in the standard list, add it as an option */}
+                            {subscription.category && ![
+                                "エンタメ", "音楽", "仕事効率化", "ショッピング", "スポーツ", "その他"
+                            ].includes(subscription.category) && (
+                                    <option value={subscription.category}>{subscription.category}</option>
+                                )}
                         </select>
                     </div>
 
@@ -204,6 +210,12 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                             <option value="trial">トライアル中</option>
                             <option value="cancelled">解約済み</option>
                             <option value="paused">一時停止</option>
+                            {/* If the current status is not in the standard list, add it as an option */}
+                            {subscription.status && ![
+                                "active", "trial", "cancelled", "paused"
+                            ].includes(subscription.status) && (
+                                    <option value={subscription.status}>{subscription.status}</option>
+                                )}
                         </select>
                     </div>
                 </div>
