@@ -27,8 +27,8 @@ export default function LoginPage() {
             setError(error.message);
             setLoading(false);
         } else {
-            router.refresh();
-            router.push("/dashboard");
+            // 完全リロードしてセッションを確実に反映
+            window.location.href = "/dashboard";
         }
     };
 

@@ -12,6 +12,7 @@ export interface Subscription {
     updated_at?: string;
     first_payment_date?: string;
     end_date?: string | null;
+    cancellation_url?: string;
     // Legacy fields for backwards compatibility
     nextBilling?: string;
     startDate?: string;

@@ -35,6 +35,7 @@ function SubscriptionDetailContent() {
     useEffect(() => {
         async function fetchData() {
             if (!id) return;
+
             const supabase = createClient();
 
             // 1. Fetch Subscription
@@ -92,7 +93,11 @@ function SubscriptionDetailContent() {
     }
 
     // Use dynamic data or fallback
-    const finalCancellationData = cancellationData || DEFAULT_CANCELLATION_INFO;
+    const baseData = cancellationData || DEFAULT_CANCELLATION_INFO;
+    const finalCancellationData = {
+        ...baseData,
+        cancellation_url: sub.cancellation_url || baseData.cancellation_url
+    };
 
 
     // Format display values
@@ -155,7 +160,7 @@ function SubscriptionDetailContent() {
                         ステータス
                     </div>
                     <div className="flex items-center gap-2">
-                        {sub.status === 'active' && (
+                        {(sub.status === 'active' || sub.status === '利用中') && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
                                 <div className="w-2 h-2 rounded-full bg-green-600"></div>
                                 有効
@@ -167,10 +172,10 @@ function SubscriptionDetailContent() {
                                 トライアル中
                             </span>
                         )}
-                        {sub.status === 'cancelled' && (
+                        {(sub.status === 'cancelled' || sub.status === 'inactive' || sub.status === '解約済' || sub.status === '解約中') && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                                 <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                                解約済み
+                                {sub.status === '解約中' ? '解約中' : '解約済み'}
                             </span>
                         )}
                         {sub.status === 'paused' && (
@@ -222,32 +227,52 @@ function SubscriptionDetailContent() {
                         </div>
 
                         {/* Only if the service is cancellable (e.g. not Rent or Utilities) */}
-                        {(finalCancellationData.is_cancellable !== false) && (
-                            <CancellationNav
-                                serviceName={sub.name}
-                                cancelUrl={finalCancellationData.cancellation_url}
-                                steps={finalCancellationData.steps}
-                                requiredInfo={finalCancellationData.required_info}
-                                onUpdateUrl={async (newUrl: string) => {
-                                    const toastId = toast.loading("URLを更新中...");
-                                    try {
-                                        const { updateCancellationUrl } = await import("@/actions/cancellation");
-                                        const success = await updateCancellationUrl(sub.name, newUrl);
-                                        if (success) {
-                                            setCancellationData({
-                                                ...finalCancellationData,
-                                                cancellation_url: newUrl,
-                                                user_verified: true,
-                                            });
-                                            toast.success("URLを更新しました", { id: toastId });
-                                        } else {
-                                            toast.error("更新に失敗しました", { id: toastId });
-                                        }
-                                    } catch (e) {
-                                        toast.error("エラーが発生しました", { id: toastId });
+                        <CancellationNav
+                            serviceName={sub.name}
+                            cancelUrl={finalCancellationData.cancellation_url}
+                            steps={finalCancellationData.steps}
+                            requiredInfo={finalCancellationData.required_info}
+                            onUpdateUrl={async (newUrl: string) => {
+                                const toastId = toast.loading("URLを保存中...");
+                                try {
+                                    const supabase = createClient();
+                                    const { error } = await supabase
+                                        .from('subscriptions')
+                                        .update({ cancellation_url: newUrl })
+                                        .eq('id', sub.id);
+
+                                    if (!error) {
+                                        setSub({ ...sub, cancellation_url: newUrl });
+                                        toast.success("URLを保存しました", { id: toastId });
+                                    } else {
+                                        console.error(error);
+                                        toast.error("保存に失敗しました", { id: toastId });
                                     }
-                                }}
-                            />
+                                } catch (e) {
+                                    toast.error("エラーが発生しました", { id: toastId });
+                                }
+                            }}
+                        />
+
+                        {/* Debug Logs */}
+                        {(() => {
+                            console.log('[Detail Page] cancellationData:', cancellationData);
+                            console.log('[Detail Page] debugLogs:', cancellationData?.debugLogs);
+                            return null;
+                        })()}
+                        {cancellationData?.debugLogs && cancellationData.debugLogs.length > 0 && (
+                            <div className="mt-8 p-4 bg-gray-900 text-gray-100 rounded-lg text-xs font-mono overflow-x-auto">
+                                <details>
+                                    <summary className="cursor-pointer font-bold mb-2">🔍 デバッグログを表示</summary>
+                                    <div className="space-y-1 mt-2">
+                                        {cancellationData.debugLogs.map((log, i) => (
+                                            <div key={i} className="whitespace-pre-wrap border-b border-gray-700 pb-1 mb-1 last:border-0">
+                                                {log}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            </div>
                         )}
                     </>
                 ) : isCancelled ? (
@@ -291,7 +316,7 @@ function SubscriptionDetailContent() {
                                         setRegistrationData({
                                             ...registrationData,
                                             registration_url: newUrl,
-                                            user_verified: true,
+                                            verified: true,
                                         } as RegistrationInfo);
                                         toast.success("URLを更新しました", { id: toastId });
                                     } else {

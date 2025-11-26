@@ -14,6 +14,7 @@ export function NewSubscriptionForm() {
     const [status, setStatus] = useState<'idle' | 'saving' | 'investigating' | 'success'>('idle');
     const [error, setError] = useState<string | null>(null);
     const [isCustomCategory, setIsCustomCategory] = useState(false);
+    const [subscriptionStatus, setSubscriptionStatus] = useState('active');
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -26,32 +27,49 @@ export function NewSubscriptionForm() {
         const cycle = formData.get("cycle") as string;
         const category = formData.get("category") as string;
         const billingDate = formData.get("billingDate") as string;
+        // subscriptionStatus state is used instead of getting from formData directly for consistency
 
         // Parse amount (remove ¥ and commas)
-        const amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
+        let amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
 
-        if (!name || !amount || !cycle || !category || !billingDate) {
-            setError("すべての必須フィールドを入力してください");
+        // トライアルの場合は金額が未入力なら0とする
+        if (subscriptionStatus === 'trial' && isNaN(amount)) {
+            amount = 0;
+        }
+
+        // バリデーション: トライアルの場合は金額と周期のチェックをスキップ
+        if (!name || !category || !billingDate) {
+            setError("必須フィールド（サービス名、カテゴリ、日付）を入力してください");
             setStatus('idle');
             return;
         }
 
+        if (subscriptionStatus !== 'trial') {
+            if (isNaN(amount) || !cycle) {
+                setError("金額と支払い周期を入力してください");
+                setStatus('idle');
+                return;
+            }
+        }
+
         try {
             const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
+            let userId: string;
 
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 setError("ログインが必要です");
                 setStatus('idle');
                 return;
             }
+            userId = user.id;
 
-            // Check subscription limit for free plan
+            // Check subscription limit for free plan (本番のみ)
             if (userPlan.type === 'free') {
                 const { count, error: countError } = await supabase
                     .from("subscriptions")
                     .select("*", { count: 'exact', head: true })
-                    .eq("user_id", user.id)
+                    .eq("user_id", userId)
                     .neq("status", "deleted");
 
                 if (countError) throw countError;
@@ -59,21 +77,21 @@ export function NewSubscriptionForm() {
                 if (count !== null && count >= userPlan.limit) {
                     setError(`フリープランでは最大${userPlan.limit}つまでしか登録できません。プレミアムプランにアップグレードしてください。`);
                     setStatus('idle');
-                    return;
+                    return; // Added return to stop execution if limit is reached
                 }
             }
 
             const { error: insertError } = await supabase
                 .from("subscriptions")
                 .insert({
-                    user_id: user.id,
+                    user_id: userId,
                     name,
                     amount,
-                    cycle,
+                    cycle: cycle || 'monthly', // トライアル時はデフォルトでmonthly
                     category,
                     first_payment_date: billingDate,
                     next_payment_date: billingDate,
-                    status: "active",
+                    status: subscriptionStatus,
                 });
 
             if (insertError) throw insertError;
@@ -96,10 +114,11 @@ export function NewSubscriptionForm() {
 
             // Force a hard refresh/navigation to ensure data is visible
             router.refresh();
-            router.push("/dashboard");
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "エラーが発生しました";
-            setError(message);
+            router.push('/dashboard');
+
+        } catch (error) {
+            console.error("Error adding subscription:", error);
+            setError("サブスクリプションの追加に失敗しました。もう一度お試しください。");
             setStatus('idle');
         }
     };
@@ -187,28 +206,32 @@ export function NewSubscriptionForm() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                            <label htmlFor="amount" className="text-sm font-medium">金額 (円) *</label>
+                            <label htmlFor="amount" className="text-sm font-medium">
+                                金額 (円) {subscriptionStatus === 'trial' ? <span className="text-muted-foreground font-normal">(任意)</span> : '*'}
+                            </label>
                             <input
                                 id="amount"
                                 name="amount"
                                 type="number"
-                                required
+                                required={subscriptionStatus !== 'trial'}
                                 placeholder="1000"
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <label htmlFor="cycle" className="text-sm font-medium">支払い周期 *</label>
-                            <select
-                                id="cycle"
-                                name="cycle"
-                                required
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <option value="monthly">月額</option>
-                                <option value="yearly">年額</option>
-                            </select>
-                        </div>
+                        {subscriptionStatus !== 'trial' && (
+                            <div className="grid gap-2">
+                                <label htmlFor="cycle" className="text-sm font-medium">支払い周期 *</label>
+                                <select
+                                    id="cycle"
+                                    name="cycle"
+                                    required
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="monthly">月額</option>
+                                    <option value="yearly">年額</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-2">
@@ -257,7 +280,9 @@ export function NewSubscriptionForm() {
                     </div>
 
                     <div className="grid gap-2">
-                        <label htmlFor="billingDate" className="text-sm font-medium">初回請求日 *</label>
+                        <label htmlFor="billingDate" className="text-sm font-medium">
+                            {subscriptionStatus === 'trial' ? 'トライアル終了日' : '初回請求日'} *
+                        </label>
                         <input
                             id="billingDate"
                             name="billingDate"
@@ -265,6 +290,24 @@ export function NewSubscriptionForm() {
                             required
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <label htmlFor="status" className="text-sm font-medium">契約種別 *</label>
+                        <select
+                            id="status"
+                            name="status"
+                            required
+                            value={subscriptionStatus}
+                            onChange={(e) => setSubscriptionStatus(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="active">有料契約</option>
+                            <option value="trial">トライアル</option>
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            トライアル期間中の場合は「トライアル」を選択してください
+                        </p>
                     </div>
                 </div>
 

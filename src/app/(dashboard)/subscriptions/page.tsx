@@ -3,6 +3,7 @@
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
 import { SubscriptionCancellationCandidates } from "@/components/subscriptions/cancellation-candidates";
 import { CancelledSubscriptions } from "@/components/subscriptions/cancelled-subscriptions";
+import { TrialSubscriptions } from "@/components/subscriptions/trial-subscriptions";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 
@@ -39,6 +40,7 @@ export default function SubscriptionsPage() {
                 </p>
             </div>
             <SubscriptionList subscriptions={subscriptions} onUpdate={fetchData} />
+            <TrialSubscriptions subscriptions={subscriptions} onUpdate={fetchData} />
             <SubscriptionCancellationCandidates subscriptions={subscriptions} onUpdate={fetchData} />
             <CancelledSubscriptions subscriptions={subscriptions} onUpdate={fetchData} />
         </div>

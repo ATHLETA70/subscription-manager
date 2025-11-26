@@ -1,18 +1,21 @@
 "use client";
 
-import { User, CreditCard, Check, Zap, Palette, Bell } from "lucide-react";
+import { User, CreditCard, Check, Zap, Palette, Bell, LogOut } from "lucide-react";
 import { ThemeSelector } from "@/components/settings/theme-selector";
 import { createClient } from "@/lib/supabase/client";
 import { userPlan } from "@/lib/user-plan";
 import { useEffect, useState } from "react";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/actions/notifications";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [daysBeforeBilling, setDaysBeforeBilling] = useState(7);
   const [savingNotifications, setSavingNotifications] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUser() {
@@ -42,6 +45,14 @@ export default function SettingsPage() {
     }
 
     setSavingNotifications(false);
+  };
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    toast.success("ログアウトしました");
+    window.location.href = "/login";
   };
 
   if (loading) {
@@ -119,6 +130,24 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Account Section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <User className="w-5 h-5" />
+          アカウント
+        </h2>
+        <div className="p-6 rounded-xl border bg-card">
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2"
+          >
+            <LogOut className="w-4 h-4" />
+            {loggingOut ? "ログアウト中..." : "ログアウト"}
+          </button>
+        </div>
+      </section>
+
       {/* Plan Section */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">現在のプラン</h2>
@@ -182,7 +211,7 @@ export default function SettingsPage() {
             </div>
 
             <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors relative z-10">
-              プランを変更する (¥{userPlan.price}/月)
+              プランを変更する (¥200/月)
             </button>
           </div>
         </div>

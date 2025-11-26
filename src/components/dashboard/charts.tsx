@@ -10,6 +10,7 @@ import { Subscription } from "@/types/subscription";
 // Calculate category data
 export function DashboardCharts({ subscriptions }: { subscriptions: Subscription[] }) {
     const [activeTab, setActiveTab] = useState<'service' | 'category_trend'>('service');
+    const [monthRange, setMonthRange] = useState<3 | 6 | 12>(6);
 
     // 1. Pie Chart Data: Active Subscriptions by Service Name
     const serviceData = subscriptions
@@ -26,36 +27,70 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
     // 2. Bar Chart Data: Monthly Trend Stacked by Category
     const categories = Array.from(new Set(subscriptions.map(sub => sub.category))).filter(Boolean);
 
-    const trendData = [
-        { name: '7月', date: '2023-07-01' },
-        { name: '8月', date: '2023-08-01' },
-        { name: '9月', date: '2023-09-01' },
-        { name: '10月', date: '2023-10-01' },
-        { name: '11月', date: '2023-11-01' },
-        { name: '12月', date: '2023-12-01' },
-    ].map(month => {
-        const monthData: Record<string, number | string> = { name: month.name };
+    // Get current date for calculation
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth(); // 0-11
+    const currentYear = currentDate.getFullYear();
+
+    // Generate data for the selected month range
+    const trendData = Array.from({ length: monthRange }, (_, i) => {
+        const monthOffset = monthRange - 1 - i; // Start from (monthRange - 1) months ago
+        const date = new Date(currentYear, currentMonth - monthOffset, 1);
+        const monthName = `${date.getMonth() + 1}月`;
+
+        // Format: YYYY-MM-DD for the first day of the month
+        const monthStartDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+
+        // Last day of the month for comparison
+        const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        const monthEndDate = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-${String(nextMonth.getDate()).padStart(2, '0')}`;
+
+        const monthData: Record<string, number | string> = { name: monthName };
 
         // Initialize all categories to 0
         categories.forEach(cat => {
             monthData[cat] = 0;
         });
 
-        subscriptions.forEach(sub => {
-            // Simple logic: if subscription started before this month, include it
-            if (sub.first_payment_date && sub.first_payment_date <= month.date && (!sub.end_date || sub.end_date >= month.date)) {
+        // Include subscriptions based on their first_payment_date and end_date
+        subscriptions
+            .filter(sub => {
+                // Only include active or trial subscriptions
+                if (sub.status !== "active" && sub.status !== "利用中" && sub.status !== "trial") {
+                    return false;
+                }
+
+                // If first_payment_date exists, only include if it's before or during this month
+                if (sub.first_payment_date) {
+                    // Subscription started after this month - exclude
+                    if (sub.first_payment_date > monthEndDate) {
+                        return false;
+                    }
+                }
+
+                // If end_date exists, only include if it's after or during this month
+                if (sub.end_date) {
+                    // Subscription ended before this month - exclude
+                    if (sub.end_date < monthStartDate) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            .forEach(sub => {
                 const amount = typeof sub.amount === 'string' ? parseInt(sub.amount.replace(/[^0-9]/g, "")) : sub.amount;
                 const monthlyAmount = (sub.cycle === "月額" || sub.cycle === "monthly") ? amount : Math.round(amount / 12);
 
-                if (sub.category) {
+                if (sub.category && categories.includes(sub.category)) {
                     const currentAmount = typeof monthData[sub.category] === 'number' ? monthData[sub.category] as number : 0;
                     monthData[sub.category] = currentAmount + monthlyAmount;
                 }
-            }
-        });
+            });
 
         return monthData;
     });
+
 
     return (
         <div className="space-y-4">
@@ -173,9 +208,21 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                     </div>
                 </div>
 
+
                 {/* Bar Chart: Category Trend */}
                 <div className={cn("p-3 md:p-6 rounded-xl border bg-card shadow-sm", activeTab === 'category_trend' ? "block" : "hidden md:block")}>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4">カテゴリ別支出の推移</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">カテゴリ別支出の推移</h3>
+                        <select
+                            value={monthRange}
+                            onChange={(e) => setMonthRange(parseInt(e.target.value) as 3 | 6 | 12)}
+                            className="text-xs px-2 py-1 rounded-md border border-input bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        >
+                            <option value={3}>3ヶ月</option>
+                            <option value={6}>6ヶ月</option>
+                            <option value={12}>12ヶ月</option>
+                        </select>
+                    </div>
                     <div className="h-[200px] md:h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={trendData}>

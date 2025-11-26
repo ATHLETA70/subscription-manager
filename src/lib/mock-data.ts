@@ -127,7 +127,7 @@ export const mockSubscriptions = [
 ];
 
 export const userPlan = {
-    type: 'premium', // 'free' | 'premium'
-    limit: Infinity, // 無制限
-    price: 200
+    type: 'free', // 'free' | 'premium'
+    limit: 3, // 3件まで
+    price: 0
 };

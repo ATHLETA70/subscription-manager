@@ -8,7 +8,8 @@ export interface CancellationInfo {
     steps: { id: number; label: string; description: string }[];
     required_info: { label: string; value: string }[];
     is_cancellable?: boolean;
-    user_verified?: boolean;
+    verified?: boolean;
+    debugLogs?: string[];
 }
 
 function normalizeServiceName(name: string): string {
@@ -120,7 +121,8 @@ export async function getCancellationInfo(serviceName: string): Promise<Cancella
                 steps: existingData.cancellation_steps,
                 required_info: existingData.required_info,
                 is_cancellable: existingData.is_cancellable ?? true,
-                user_verified: existingData.user_verified ?? false,
+                verified: existingData.verified ?? false,
+                debugLogs: ["Returned from DB cache"],
             };
         }
         // If stale, we proceed to Gemini fetch (step 2)
@@ -131,16 +133,27 @@ export async function getCancellationInfo(serviceName: string): Promise<Cancella
     if (!genAI) return null;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
         const prompt = generatePrompt(serviceName);
 
         console.log(`[Gemini] Requesting info for: ${serviceName}`);
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const text = response.text();
-        console.log(`[Gemini] Raw response:`, text);
 
-        // Clean up markdown code blocks if present
+        const result = await genAI.models.generateContent({
+            model: GEMINI_MODEL_NAME,
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+            }
+        });
+
+        const text = result.text;
+        console.log(`[Gemini] Raw response: ${text?.substring(0, 200)}...`); // Log first 200 chars
+
+        if (!text) {
+            console.log(`[Gemini] Empty response text`);
+            return { cancellation_url: "", steps: [], required_info: [] };
+        }
+
         const jsonStr = text.replace(/^```json\n|\n```$/g, "").trim();
 
         let data;
@@ -196,14 +209,26 @@ export async function refreshCancellationInfo(serviceName: string): Promise<Canc
     if (!genAI) return null;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
         const prompt = generatePrompt(serviceName);
 
         console.log(`[Gemini Refresh] Requesting info for: ${serviceName}`);
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const text = response.text();
-        console.log(`[Gemini Refresh] Raw response:`, text);
+
+        const result = await genAI.models.generateContent({
+            model: GEMINI_MODEL_NAME,
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+            }
+        });
+
+        const text = result.text;
+        console.log(`[Gemini Refresh] Raw response: ${text?.substring(0, 200)}...`);
+
+        if (!text) {
+            console.log(`[Gemini Refresh] Empty response text`);
+            return { cancellation_url: "", steps: [], required_info: [] };
+        }
 
         const jsonStr = text.replace(/^```json\n|\n```$/g, "").trim();
         let data;

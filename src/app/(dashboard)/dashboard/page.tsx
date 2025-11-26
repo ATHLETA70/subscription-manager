@@ -2,6 +2,7 @@
 
 import { DashboardStats } from "@/components/dashboard/stats";
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
+import { TrialSubscriptions } from "@/components/subscriptions/trial-subscriptions";
 import { Subscription } from "@/types/subscription";
 import { DashboardCharts } from "@/components/dashboard/charts";
 import { createClient } from "@/lib/supabase/client";
@@ -13,13 +14,18 @@ export default function DashboardPage() {
 
     const fetchData = useCallback(async () => {
         const supabase = createClient();
-        const { data } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .order('amount', { ascending: false });
+        // 本番環境ではログインユーザーのデータを取得
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('amount', { ascending: false });
 
-        if (data) {
-            setSubscriptions(data);
+            if (data) {
+                setSubscriptions(data);
+            }
         }
         setLoading(false);
     }, []);
@@ -46,6 +52,7 @@ export default function DashboardPage() {
             <DashboardCharts subscriptions={subscriptions} />
 
             <SubscriptionList subscriptions={subscriptions} onUpdate={fetchData} />
+            <TrialSubscriptions subscriptions={subscriptions} onUpdate={fetchData} />
         </div>
     );
 }

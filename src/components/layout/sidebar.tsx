@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Home, CreditCard, Settings, Bell, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { userPlan } from "@/lib/user-plan";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
     { name: "ダッシュボード", href: "/dashboard", icon: Home },
@@ -16,6 +18,22 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const [userEmail, setUserEmail] = useState<string>("");
+    const [userInitials, setUserInitials] = useState<string>("U");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) {
+                setUserEmail(user.email);
+                // メールアドレスの最初の2文字をイニシャルとして使用
+                const initials = user.email.substring(0, 2).toUpperCase();
+                setUserInitials(initials);
+            }
+        };
+        fetchUser();
+    }, []);
 
     return (
         <div className="hidden lg:flex h-screen w-64 flex-col border-r bg-card text-card-foreground fixed left-0 top-0 z-40">
@@ -49,12 +67,12 @@ export function Sidebar() {
 
                 {userPlan.type === 'free' && (
                     <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 border border-primary/20">
-                        <h4 className="font-semibold text-sm mb-1">Premium Plan</h4>
+                        <h4 className="font-semibold text-sm mb-1">Premium にアップグレード</h4>
                         <p className="text-xs text-muted-foreground mb-3">
                             無制限の登録と高度な分析機能
                         </p>
                         <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors">
-                            アップグレード (¥{userPlan.price}/月)
+                            アップグレード (¥200/月)
                         </button>
                     </div>
                 )}
@@ -63,10 +81,10 @@ export function Sidebar() {
             <div className="p-4 border-t border-border">
                 <div className="flex items-center gap-3 overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-blue-400 flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
-                        YK
+                        {userInitials}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">Yuta Kobayashi</div>
+                        <div className="text-sm font-medium truncate">{userEmail || "Loading..."}</div>
                         <div className="text-xs text-muted-foreground truncate">
                             {userPlan.type === 'premium' ? 'Premium Plan' : 'Free Plan'}
                         </div>

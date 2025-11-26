@@ -8,7 +8,7 @@ export interface RegistrationInfo {
     has_free_trial?: boolean;
     trial_period?: string;
     notes?: string;
-    user_verified?: boolean;
+    verified?: boolean;
 }
 
 function normalizeServiceName(name: string): string {
@@ -109,7 +109,7 @@ export async function getRegistrationInfo(serviceName: string): Promise<Registra
             has_free_trial: existingData.has_free_trial ?? false,
             trial_period: existingData.trial_period,
             notes: existingData.notes,
-            user_verified: existingData.user_verified ?? false,
+            verified: existingData.verified ?? false,
         };
     }
 
@@ -162,7 +162,6 @@ export async function getRegistrationInfo(serviceName: string): Promise<Registra
             trial_period: data.trial_period || null,
             notes: data.notes || null,
             verified: false,
-            user_verified: false,
         }, { onConflict: 'service_name', ignoreDuplicates: true });
 
         return {
@@ -170,7 +169,7 @@ export async function getRegistrationInfo(serviceName: string): Promise<Registra
             has_free_trial: data.has_free_trial,
             trial_period: data.trial_period,
             notes: data.notes,
-            user_verified: false,
+            verified: false,
         };
 
     } catch (error) {
@@ -225,7 +224,6 @@ export async function refreshRegistrationInfo(serviceName: string): Promise<Regi
             trial_period: data.trial_period || null,
             notes: data.notes || null,
             verified: false,
-            user_verified: false,
             updated_at: new Date().toISOString(),
         }, { onConflict: 'service_name', ignoreDuplicates: false });
 
@@ -234,7 +232,7 @@ export async function refreshRegistrationInfo(serviceName: string): Promise<Regi
             has_free_trial: data.has_free_trial,
             trial_period: data.trial_period,
             notes: data.notes,
-            user_verified: false,
+            verified: false,
         };
     } catch (error) {
         console.error("[Gemini Registration Refresh] API Error:", error);
@@ -242,9 +240,6 @@ export async function refreshRegistrationInfo(serviceName: string): Promise<Regi
     }
 }
 
-/**
- * Update registration URL with user verification
- */
 export async function updateRegistrationUrl(
     serviceName: string,
     newUrl: string,
@@ -254,16 +249,36 @@ export async function updateRegistrationUrl(
     const normalizedName = normalizeServiceName(serviceName);
 
     try {
-        // Use upsert to handle both insert and update cases
+        // Get existing data to preserve other fields
+        const { data: existing } = await supabase
+            .from("service_registration_info")
+            .select("*")
+            .eq("service_name", normalizedName)
+            .single();
+
+        // Prepare upsert data
+        const upsertData: any = {
+            service_name: normalizedName,
+            registration_url: newUrl,
+            verified: verified,
+            updated_at: new Date().toISOString(),
+        };
+
+        // Include existing fields if they exist
+        if (existing) {
+            upsertData.has_free_trial = existing.has_free_trial ?? false;
+            upsertData.trial_period = existing.trial_period || null;
+            upsertData.notes = existing.notes || null;
+        } else {
+            // If no existing data, provide defaults
+            upsertData.has_free_trial = false;
+            upsertData.trial_period = null;
+            upsertData.notes = null;
+        }
+
         const { error } = await supabase
             .from("service_registration_info")
-            .upsert({
-                service_name: normalizedName,
-                registration_url: newUrl,
-                user_verified: verified,
-                verification_count: verified ? 1 : 0,
-                updated_at: new Date().toISOString(),
-            }, { onConflict: 'service_name', ignoreDuplicates: false });
+            .upsert(upsertData, { onConflict: 'service_name', ignoreDuplicates: false });
 
         if (error) {
             console.error("[Update Registration URL] Database Error:", error);
@@ -284,20 +299,10 @@ export async function verifyRegistrationUrl(serviceName: string): Promise<boolea
     const normalizedName = normalizeServiceName(serviceName);
 
     try {
-        // First get current verification count
-        const { data: existing } = await supabase
-            .from("service_registration_info")
-            .select("verification_count")
-            .eq("service_name", normalizedName)
-            .single();
-
-        const currentCount = existing?.verification_count || 0;
-
         const { error } = await supabase
             .from("service_registration_info")
             .update({
-                user_verified: true,
-                verification_count: currentCount + 1,
+                verified: true,
             })
             .eq("service_name", normalizedName);
 

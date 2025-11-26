@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -7,7 +7,7 @@ export const getGeminiClient = () => {
         console.warn("GEMINI_API_KEY is not set");
         return null;
     }
-    return new GoogleGenerativeAI(apiKey);
+    return new GoogleGenAI({ apiKey });
 };
 
-export const GEMINI_MODEL_NAME = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+export const GEMINI_MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp";

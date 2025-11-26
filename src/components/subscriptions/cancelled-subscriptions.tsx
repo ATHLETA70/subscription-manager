@@ -32,7 +32,7 @@ export function CancelledSubscriptions({ subscriptions, onUpdate }: CancelledSub
             <div className="grid gap-2 md:hidden">
                 {cancelledSubs.map((sub) => (
                     <Link
-                        href={`/subscriptions/${sub.id}`}
+                        href={`/subscriptions/detail?id=${sub.id}`}
                         key={sub.id}
                         className="flex items-center justify-between p-3 rounded-xl border bg-card opacity-60 shadow-sm active:scale-95 transition-transform"
                     >
@@ -83,7 +83,7 @@ export function CancelledSubscriptions({ subscriptions, onUpdate }: CancelledSub
                 <div className="divide-y divide-border">
                     {cancelledSubs.map((sub) => (
                         <div key={sub.id} className="grid grid-cols-[2fr_1.2fr_1fr_1fr_1.2fr_1fr_1.2fr] gap-4 px-6 py-4 hover:bg-muted/50 transition-colors group items-center text-sm">
-                            <Link href={`/subscriptions/${sub.id}`} className="flex items-center gap-3">
+                            <Link href={`/subscriptions/detail?id=${sub.id}`} className="flex items-center gap-3">
                                 {sub.image_url ? (
                                     <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center overflow-hidden border shrink-0 p-1.5 grayscale">
                                         <img
@@ -110,7 +110,7 @@ export function CancelledSubscriptions({ subscriptions, onUpdate }: CancelledSub
                             </div>
                             <div className="text-right">
                                 <Link
-                                    href={`/subscriptions/${sub.id}`}
+                                    href={`/subscriptions/detail?id=${sub.id}`}
                                     className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap"
                                 >
                                     詳細を見る
