@@ -59,6 +59,7 @@ interface SubscriptionListProps {
 
 export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListProps) {
     const router = useRouter();
+    const [showLimitModal, setShowLimitModal] = useState(false);
 
     // Filter to show only active subscriptions
     const activeSubscriptions = subscriptions.filter(
@@ -67,7 +68,7 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
 
     const handleNewSubscription = () => {
         if (userPlan.type === 'free' && subscriptions.length >= userPlan.limit) {
-            alert(`フリープランでは最大${userPlan.limit}つまでしか登録できません。\n無制限に登録するにはプレミアムプラン（¥${userPlan.price}/月）にアップグレードしてください。`);
+            setShowLimitModal(true);
             return;
         }
         router.push('/subscriptions/new');
@@ -189,6 +190,85 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                     ))}
                 </div>
             </div>
+
+            {/* Free Plan Limit Modal */}
+            {showLimitModal && (
+                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-card border rounded-2xl p-8 max-w-md w-full space-y-6 shadow-2xl animate-in zoom-in duration-300">
+                        <div className="text-center space-y-4">
+                            {/* Icon */}
+                            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-primary">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                                </svg>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-2xl font-bold tracking-tight">
+                                すごい！<br />
+                                たくさんのサブスクを管理していますね🎉
+                            </h3>
+
+                            {/* Message */}
+                            <div className="space-y-3 text-sm text-muted-foreground">
+                                <p>
+                                    現在、フリープランで管理できる<br />
+                                    <span className="font-bold text-foreground">最大{userPlan.limit}つのサブスクリプション</span>を<br />
+                                    すでに登録されています。
+                                </p>
+                                <p className="text-base font-medium text-foreground">
+                                    さらに多くのサブスクを管理するには<br />
+                                    プレミアムプランへのアップグレードがおすすめです！
+                                </p>
+                                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4">
+                                    <p className="text-xs text-muted-foreground mb-1">プレミアムプラン</p>
+                                    <p className="text-2xl font-bold text-primary mb-2">¥{userPlan.price}<span className="text-sm font-normal text-muted-foreground">/月</span></p>
+                                    <ul className="text-xs text-left space-y-1.5">
+                                        <li className="flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>無制限のサブスク登録</span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>高度な分析機能</span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>優先サポート</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => {
+                                    setShowLimitModal(false);
+                                    // TODO: Navigate to upgrade page
+                                    toast.success('アップグレード機能は準備中です');
+                                }}
+                                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 transition-colors"
+                            >
+                                プレミアムプランにアップグレード
+                            </button>
+                            <button
+                                onClick={() => setShowLimitModal(false)}
+                                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 transition-colors"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

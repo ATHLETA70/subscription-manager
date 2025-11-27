@@ -7,6 +7,13 @@ export interface Subscription {
     next_payment_date: string | null;
     status: 'active' | 'inactive' | '利用中' | '解約済' | '解約中' | 'trial';
     image_url: string | null;
+    cancellation_info?: {
+        cancellation_url?: string;
+        steps?: { id: number; label: string; description: string }[];
+        required_info?: { label: string; value: string }[];
+        is_cancellable?: boolean;
+        verified?: boolean;
+    };
     user_id?: string;
     created_at?: string;
     updated_at?: string;

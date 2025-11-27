@@ -11,6 +11,7 @@ import { useEffect, useState, Suspense } from "react";
 import { getCancellationInfo, CancellationInfo } from "@/actions/cancellation";
 import { getRegistrationInfo, RegistrationInfo } from "@/actions/registration";
 import { toast } from "sonner";
+import { AIProcessingOverlay, AIProcessingStatus } from "@/components/ui/ai-processing-overlay";
 
 // Default fallback only
 const DEFAULT_CANCELLATION_INFO: CancellationInfo = {
@@ -31,6 +32,7 @@ function SubscriptionDetailContent() {
     const [loading, setLoading] = useState(true);
     const [cancellationData, setCancellationData] = useState<CancellationInfo | null>(null);
     const [registrationData, setRegistrationData] = useState<RegistrationInfo | null>(null);
+    const [analyzingStatus, setAnalyzingStatus] = useState<AIProcessingStatus>("idle");
 
     useEffect(() => {
         async function fetchData() {
@@ -68,13 +70,21 @@ function SubscriptionDetailContent() {
                 }
             } else {
                 // Fetch cancellation info for active subscriptions
-                try {
-                    const info = await getCancellationInfo(subData.name);
-                    if (info) {
-                        setCancellationData(info);
+                // First check if we already have it in the subscription record
+                if (subData.cancellation_info) {
+                    setCancellationData(subData.cancellation_info);
+                } else {
+                    // If not, fetch it and save it to the subscription
+                    try {
+                        const info = await getCancellationInfo(subData.name, subData.id);
+                        if (info) {
+                            setCancellationData(info);
+                            // Update local state to reflect the change immediately
+                            setSub({ ...subData, cancellation_info: info });
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch cancellation info:", err);
                     }
-                } catch (err) {
-                    console.error("Failed to fetch cancellation info:", err);
                 }
             }
 
@@ -106,11 +116,13 @@ function SubscriptionDetailContent() {
     const displayNextBilling = sub.next_payment_date || "未設定";
 
     // Check if subscription is active or cancelled
-    const isActive = sub.status === 'active' || sub.status === '利用中';
+    const isActive = sub.status === 'active' || sub.status === '利用中' || sub.status === 'trial';
     const isCancelled = sub.status === 'inactive' || sub.status === '解約中';
 
     return (
         <div className="max-w-2xl mx-auto space-y-8 pb-20">
+            <AIProcessingOverlay status={analyzingStatus} serviceName={sub.name} />
+
             {/* Header */}
             <div className="space-y-4">
                 <Link href="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -202,22 +214,36 @@ function SubscriptionDetailContent() {
             <section className="space-y-4">
                 {isActive ? (
                     <>
-                        <div className="flex items-center justify between">
+                        <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold">解約アシスタント</h2>
                             <button
                                 onClick={async () => {
-                                    const toastId = toast.loading("情報を更新中...");
+                                    setAnalyzingStatus("processing");
                                     try {
                                         const { refreshCancellationInfo } = await import("@/actions/cancellation");
-                                        const newData = await refreshCancellationInfo(sub.name);
+                                        // Pass subscription ID to force update specific record
+                                        const newData = await refreshCancellationInfo(sub.name, sub.id);
+
                                         if (newData) {
+                                            setAnalyzingStatus("success");
+                                            // Wait for success animation
+                                            await new Promise(resolve => setTimeout(resolve, 3000));
+
                                             setCancellationData(newData);
-                                            toast.success("情報を更新しました", { id: toastId });
+                                            // Update local state
+                                            setSub({ ...sub, cancellation_info: newData });
+                                            toast.success("情報を更新しました");
                                         } else {
-                                            toast.error("情報の取得に失敗しました", { id: toastId });
+                                            setAnalyzingStatus("error");
+                                            await new Promise(resolve => setTimeout(resolve, 3000));
+                                            toast.error("情報の取得に失敗しました");
                                         }
                                     } catch (e) {
-                                        toast.error("エラーが発生しました", { id: toastId });
+                                        setAnalyzingStatus("error");
+                                        await new Promise(resolve => setTimeout(resolve, 3000));
+                                        toast.error("エラーが発生しました");
+                                    } finally {
+                                        setAnalyzingStatus("idle");
                                     }
                                 }}
                                 className="text-xs text-muted-foreground hover:text-primary underline"
@@ -235,17 +261,17 @@ function SubscriptionDetailContent() {
                             onUpdateUrl={async (newUrl: string) => {
                                 const toastId = toast.loading("URLを保存中...");
                                 try {
-                                    const supabase = createClient();
-                                    const { error } = await supabase
-                                        .from('subscriptions')
-                                        .update({ cancellation_url: newUrl })
-                                        .eq('id', sub.id);
+                                    const { updateCancellationUrl } = await import("@/actions/cancellation");
+                                    // Use the new action that updates cancellation_info JSON
+                                    const success = await updateCancellationUrl(sub.id, newUrl);
 
-                                    if (!error) {
-                                        setSub({ ...sub, cancellation_url: newUrl });
+                                    if (success) {
+                                        // Update local state
+                                        const newInfo = { ...finalCancellationData, cancellation_url: newUrl };
+                                        setCancellationData(newInfo);
+                                        setSub({ ...sub, cancellation_info: newInfo });
                                         toast.success("URLを保存しました", { id: toastId });
                                     } else {
-                                        console.error(error);
                                         toast.error("保存に失敗しました", { id: toastId });
                                     }
                                 } catch (e) {
@@ -260,20 +286,6 @@ function SubscriptionDetailContent() {
                             console.log('[Detail Page] debugLogs:', cancellationData?.debugLogs);
                             return null;
                         })()}
-                        {cancellationData?.debugLogs && cancellationData.debugLogs.length > 0 && (
-                            <div className="mt-8 p-4 bg-gray-900 text-gray-100 rounded-lg text-xs font-mono overflow-x-auto">
-                                <details>
-                                    <summary className="cursor-pointer font-bold mb-2">🔍 デバッグログを表示</summary>
-                                    <div className="space-y-1 mt-2">
-                                        {cancellationData.debugLogs.map((log, i) => (
-                                            <div key={i} className="whitespace-pre-wrap border-b border-gray-700 pb-1 mb-1 last:border-0">
-                                                {log}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </details>
-                            </div>
-                        )}
                     </>
                 ) : isCancelled ? (
                     // Show registration assistant for cancelled subscriptions

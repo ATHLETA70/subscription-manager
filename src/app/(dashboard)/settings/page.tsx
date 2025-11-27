@@ -3,7 +3,8 @@
 import { User, CreditCard, Check, Zap, Palette, Bell, LogOut } from "lucide-react";
 import { ThemeSelector } from "@/components/settings/theme-selector";
 import { createClient } from "@/lib/supabase/client";
-import { userPlan } from "@/lib/user-plan";
+import { useUserPlan } from "@/hooks/use-user-plan";
+import { UpgradeButton } from "@/components/subscriptions/upgrade-button";
 import { useEffect, useState } from "react";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/actions/notifications";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ export default function SettingsPage() {
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
+  const { plan, loading: planLoading } = useUserPlan();
 
   useEffect(() => {
     async function fetchUser() {
@@ -159,7 +161,7 @@ export default function SettingsPage() {
               <div>
                 <div className="text-sm text-muted-foreground font-medium mb-1">現在利用中</div>
                 <div className="text-2xl font-bold">
-                  {userPlan.type === 'premium' ? 'プレミアムプラン' : 'フリープラン'}
+                  {plan?.type === 'premium' ? 'プレミアムプラン' : 'フリープラン'}
                 </div>
               </div>
               <div className="p-2 rounded-full bg-secondary">
@@ -169,9 +171,9 @@ export default function SettingsPage() {
             <div className="space-y-2 relative z-10">
               <div className="flex items-center gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500" />
-                {userPlan.type === 'premium'
+                {plan?.type === 'premium'
                   ? 'サブスク管理 (無制限)'
-                  : `サブスク管理 (最大${userPlan.limit}つ)`}
+                  : `サブスク管理 (最大${plan?.limit || 5}つ)`}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500" /> 基本的な解約サポート
@@ -183,37 +185,37 @@ export default function SettingsPage() {
           </div>
 
           {/* Upgrade Card */}
-          <div className="p-6 rounded-xl border border-primary/50 bg-primary/5 space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Zap className="w-32 h-32" />
-            </div>
+          {plan?.type !== 'premium' && (
+            <div className="p-6 rounded-xl border border-primary/50 bg-primary/5 space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Zap className="w-32 h-32" />
+              </div>
 
-            <div className="flex items-center justify-between relative z-10">
-              <div>
-                <div className="text-sm text-primary font-medium mb-1">おすすめ</div>
-                <div className="text-2xl font-bold">プレミアムプラン</div>
+              <div className="flex items-center justify-between relative z-10">
+                <div>
+                  <div className="text-sm text-primary font-medium mb-1">おすすめ</div>
+                  <div className="text-2xl font-bold">プレミアムプラン</div>
+                </div>
+                <div className="p-2 rounded-full bg-primary text-primary-foreground">
+                  <Zap className="w-6 h-6" />
+                </div>
               </div>
-              <div className="p-2 rounded-full bg-primary text-primary-foreground">
-                <Zap className="w-6 h-6" />
-              </div>
-            </div>
 
-            <div className="space-y-2 relative z-10">
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-primary" /> 無制限のサブスク登録
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-primary" /> 無制限のサブスク登録
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-primary" /> 優先サポート
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-primary" /> 広告非表示
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-primary" /> 優先サポート
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-primary" /> 広告非表示
-              </div>
-            </div>
 
-            <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors relative z-10">
-              プランを変更する (¥200/月)
-            </button>
-          </div>
+              <UpgradeButton />
+            </div>
+          )}
         </div>
       </section>
     </div>

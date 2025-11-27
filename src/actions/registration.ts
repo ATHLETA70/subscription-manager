@@ -118,11 +118,23 @@ export async function getRegistrationInfo(serviceName: string): Promise<Registra
     if (!genAI) return null;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+        const model = genAI.getGenerativeModel({
+            model: GEMINI_MODEL_NAME,
+        });
+
         const prompt = generateRegistrationPrompt(serviceName);
 
         console.log(`[Gemini Registration] Requesting info for: ${serviceName}`);
-        const result = await model.generateContent(prompt);
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 2048,
+                responseMimeType: "application/json",
+            }
+        });
+
         const response = result.response;
         const text = response.text();
         console.log(`[Gemini Registration] Raw response:`, text);
@@ -185,11 +197,23 @@ export async function refreshRegistrationInfo(serviceName: string): Promise<Regi
     if (!genAI) return null;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+        const model = genAI.getGenerativeModel({
+            model: GEMINI_MODEL_NAME,
+        });
+
         const prompt = generateRegistrationPrompt(serviceName);
 
         console.log(`[Gemini Registration Refresh] Requesting info for: ${serviceName}`);
-        const result = await model.generateContent(prompt);
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 2048,
+                responseMimeType: "application/json",
+            }
+        });
+
         const response = result.response;
         const text = response.text();
         console.log(`[Gemini Registration Refresh] Raw response:`, text);

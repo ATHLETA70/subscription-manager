@@ -220,25 +220,7 @@ export function Calendar({ subscriptions }: { subscriptions: Subscription[] }) {
                 </div>
             </div>
 
-            {/* 凡例 */}
-            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-primary/20 border border-primary"></div>
-                    <span>今日</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-red-600"></div>
-                    <span>Netflix</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-green-500"></div>
-                    <span>Spotify</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-blue-600"></div>
-                    <span>Adobe CC</span>
-                </div>
-            </div>
+
         </div>
     );
 }

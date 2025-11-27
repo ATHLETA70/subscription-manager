@@ -13,6 +13,7 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [subscriptionStatus, setSubscriptionStatus] = useState<string>(subscription.status || 'active');
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -28,19 +29,27 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
         const status = formData.get("status") as string;
         const memo = formData.get("memo") as string;
 
-        // Validate required fields
-        if (!name || !amountStr || !cycle || !category) {
-            setError("すべての必須フィールドを入力してください");
+        // Parse amount (remove ¥ and commas)
+        let amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
+
+        // トライアルの場合は金額が未入力なら0とする
+        if (status === 'trial' && isNaN(amount)) {
+            amount = 0;
+        }
+
+        // バリデーション: トライアルの場合は金額と周期のチェックをスキップ
+        if (!name || !category) {
+            setError("必須フィールド（サービス名、カテゴリ）を入力してください");
             setLoading(false);
             return;
         }
 
-        // Parse amount safely
-        const amount = parseInt(amountStr.replace(/[^0-9]/g, "") || "0");
-        if (!amount || amount <= 0) {
-            setError("有効な金額を入力してください");
-            setLoading(false);
-            return;
+        if (status !== 'trial') {
+            if (isNaN(amount) || !cycle) {
+                setError("金額と支払い周期を入力してください");
+                setLoading(false);
+                return;
+            }
         }
 
         try {
@@ -50,7 +59,7 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
             const updateData = {
                 name,
                 amount,
-                cycle,
+                cycle: cycle || 'monthly', // トライアル時はデフォルトでmonthly
                 category,
                 next_payment_date: nextBillingDate || null,
                 status,
@@ -151,30 +160,34 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                            <label htmlFor="amount" className="text-sm font-medium">金額 (円) *</label>
+                            <label htmlFor="amount" className="text-sm font-medium">
+                                金額 (円) {subscriptionStatus === 'trial' ? <span className="text-muted-foreground font-normal">(任意)</span> : '*'}
+                            </label>
                             <input
                                 id="amount"
                                 name="amount"
                                 type="number"
-                                required
+                                required={subscriptionStatus !== 'trial'}
                                 defaultValue={typeof subscription.amount === 'number' ? subscription.amount : parseInt(String(subscription.amount).replace(/[^0-9]/g, '') || '0')}
                                 placeholder="1000"
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <label htmlFor="cycle" className="text-sm font-medium">支払い周期 *</label>
-                            <select
-                                id="cycle"
-                                name="cycle"
-                                required
-                                defaultValue={subscription.cycle}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <option value="monthly">月額</option>
-                                <option value="yearly">年額</option>
-                            </select>
-                        </div>
+                        {subscriptionStatus !== 'trial' && (
+                            <div className="grid gap-2">
+                                <label htmlFor="cycle" className="text-sm font-medium">支払い周期 *</label>
+                                <select
+                                    id="cycle"
+                                    name="cycle"
+                                    required
+                                    defaultValue={subscription.cycle}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="monthly">月額</option>
+                                    <option value="yearly">年額</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-2">
@@ -203,7 +216,9 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                     </div>
 
                     <div className="grid gap-2">
-                        <label htmlFor="nextBillingDate" className="text-sm font-medium">次回請求日</label>
+                        <label htmlFor="nextBillingDate" className="text-sm font-medium">
+                            {subscriptionStatus === 'trial' ? 'トライアル終了日' : '次回請求日'}
+                        </label>
                         <input
                             id="nextBillingDate"
                             name="nextBillingDate"
@@ -231,7 +246,8 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
                             id="status"
                             name="status"
                             required
-                            defaultValue={subscription.status || 'active'}
+                            value={subscriptionStatus}
+                            onChange={(e) => setSubscriptionStatus(e.target.value)}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <option value="active">契約中</option>

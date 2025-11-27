@@ -14,7 +14,22 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
 
     // 1. Pie Chart Data: Active Subscriptions by Service Name
     const serviceData = subscriptions
-        .filter(sub => sub.status === "active" || sub.status === "利用中" || sub.status === "trial")
+        .filter(sub => {
+            // ステータスチェック: 契約中またはトライアル中のみ
+            const isActiveStatus =
+                sub.status === "active" ||
+                sub.status === "利用中" ||
+                sub.status === "trial";
+
+            if (!isActiveStatus) return false;
+
+            // 金額チェック: 1円以上のみ
+            const amount = typeof sub.amount === 'string'
+                ? parseInt(sub.amount.replace(/[^0-9]/g, ""))
+                : sub.amount;
+
+            return amount >= 1;
+        })
         .map(sub => {
             const amount = typeof sub.amount === 'string' ? parseInt(sub.amount.replace(/[^0-9]/g, "")) : sub.amount;
             const monthlyAmount = sub.cycle === "月額" || sub.cycle === "monthly" ? amount : Math.round(amount / 12);
@@ -55,22 +70,33 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
         // Include subscriptions based on their first_payment_date and end_date
         subscriptions
             .filter(sub => {
-                // Only include active or trial subscriptions
-                if (sub.status !== "active" && sub.status !== "利用中" && sub.status !== "trial") {
-                    return false;
-                }
+                // 1. ステータスチェック: 契約中またはトライアル中のみ
+                const isActiveStatus =
+                    sub.status === 'active' ||
+                    sub.status === '利用中' ||
+                    sub.status === 'trial';
 
-                // If first_payment_date exists, only include if it's before or during this month
+                if (!isActiveStatus) return false;
+
+                // 2. 金額チェック: 1円以上のみ集計対象
+                const amount = typeof sub.amount === 'string'
+                    ? parseInt(sub.amount.replace(/[^0-9]/g, ""))
+                    : sub.amount;
+
+                if (!amount || amount < 1) return false;
+
+                // 3. その月に契約が有効だったかチェック
+                // 3-1. 開始日チェック
                 if (sub.first_payment_date) {
-                    // Subscription started after this month - exclude
+                    // 契約開始日がこの月より後なら除外
                     if (sub.first_payment_date > monthEndDate) {
                         return false;
                     }
                 }
 
-                // If end_date exists, only include if it's after or during this month
+                // 3-2. 終了日チェック
                 if (sub.end_date) {
-                    // Subscription ended before this month - exclude
+                    // 終了日がこの月より前なら除外
                     if (sub.end_date < monthStartDate) {
                         return false;
                     }
@@ -79,12 +105,47 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                 return true;
             })
             .forEach(sub => {
-                const amount = typeof sub.amount === 'string' ? parseInt(sub.amount.replace(/[^0-9]/g, "")) : sub.amount;
-                const monthlyAmount = (sub.cycle === "月額" || sub.cycle === "monthly") ? amount : Math.round(amount / 12);
+                const amount = typeof sub.amount === 'string'
+                    ? parseInt(sub.amount.replace(/[^0-9]/g, ""))
+                    : sub.amount;
 
-                if (sub.category && categories.includes(sub.category)) {
-                    const currentAmount = typeof monthData[sub.category] === 'number' ? monthData[sub.category] as number : 0;
-                    monthData[sub.category] = currentAmount + monthlyAmount;
+                let amountToCount = 0;
+
+                // 月額の場合: 毎月全額計上
+                if (sub.cycle === '月額' || sub.cycle === 'monthly') {
+                    amountToCount = amount;
+                } else {
+                    // 年額の場合: 実際の請求月のみ計上
+                    let shouldCountThisMonth = false;
+
+                    // next_payment_date がこの月の範囲内にあるかチェック
+                    if (sub.next_payment_date &&
+                        sub.next_payment_date >= monthStartDate &&
+                        sub.next_payment_date <= monthEndDate) {
+                        shouldCountThisMonth = true;
+                    } else if (sub.first_payment_date) {
+                        // next_payment_date がない場合、first_payment_date の月と同じかチェック
+                        const firstDate = new Date(sub.first_payment_date);
+                        const currentMonthDate = new Date(monthStartDate);
+
+                        // 年と月が一致する場合のみ計上
+                        if (firstDate.getFullYear() === currentMonthDate.getFullYear() &&
+                            firstDate.getMonth() === currentMonthDate.getMonth()) {
+                            shouldCountThisMonth = true;
+                        }
+                    }
+
+                    if (shouldCountThisMonth) {
+                        amountToCount = amount; // 年額を全額計上
+                    }
+                }
+
+                // カテゴリ別に集計
+                if (amountToCount > 0 && sub.category && categories.includes(sub.category)) {
+                    const currentAmount = typeof monthData[sub.category] === 'number'
+                        ? monthData[sub.category] as number
+                        : 0;
+                    monthData[sub.category] = currentAmount + amountToCount;
                 }
             });
 

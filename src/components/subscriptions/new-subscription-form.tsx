@@ -7,7 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCancellationInfo } from "@/actions/cancellation";
-import { userPlan } from "@/lib/user-plan";
+import { useUserPlan } from "@/hooks/use-user-plan";
 
 export function NewSubscriptionForm() {
     const router = useRouter();
@@ -15,6 +15,7 @@ export function NewSubscriptionForm() {
     const [error, setError] = useState<string | null>(null);
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState('active');
+    const { plan, loading: planLoading } = useUserPlan();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -65,7 +66,7 @@ export function NewSubscriptionForm() {
             userId = user.id;
 
             // Check subscription limit for free plan (本番のみ)
-            if (userPlan.type === 'free') {
+            if (plan && plan.type === 'free') {
                 const { count, error: countError } = await supabase
                     .from("subscriptions")
                     .select("*", { count: 'exact', head: true })
@@ -74,14 +75,14 @@ export function NewSubscriptionForm() {
 
                 if (countError) throw countError;
 
-                if (count !== null && count >= userPlan.limit) {
-                    setError(`フリープランでは最大${userPlan.limit}つまでしか登録できません。プレミアムプランにアップグレードしてください。`);
+                if (count !== null && count >= plan.limit) {
+                    setError(`フリープランでは最大${plan.limit}つまでしか登録できません。プレミアムプランにアップグレードしてください。`);
                     setStatus('idle');
                     return; // Added return to stop execution if limit is reached
                 }
             }
 
-            const { error: insertError } = await supabase
+            const { data: insertedData, error: insertError } = await supabase
                 .from("subscriptions")
                 .insert({
                     user_id: userId,
@@ -92,25 +93,40 @@ export function NewSubscriptionForm() {
                     first_payment_date: billingDate,
                     next_payment_date: billingDate,
                     status: subscriptionStatus,
-                });
+                })
+                .select()
+                .single();
 
             if (insertError) throw insertError;
 
-            // Step 2: Investigate cancellation info
+            toast.success("サブスクリプションを追加しました！");
+
+            // Step 2: Investigate cancellation info (synchronous)
             setStatus('investigating');
 
             try {
-                await getCancellationInfo(name);
+                console.log(`[New Subscription] Fetching cancellation info for: ${name} (ID: ${insertedData.id})`);
+                // Pass the subscription ID to update the record directly
+                const cancellationInfo = await getCancellationInfo(name, insertedData.id);
+
+                if (!cancellationInfo) {
+                    console.warn(`[New Subscription] Failed to fetch cancellation info (null returned)`);
+                } else if (!cancellationInfo.cancellation_url) {
+                    console.log(`[New Subscription] No cancellation URL found - may need retry`);
+                } else {
+                    console.log(`[New Subscription] Successfully fetched cancellation URL: ${cancellationInfo.cancellation_url}`);
+                    toast.success("解約情報も取得しました！");
+                }
             } catch (fetchError) {
-                console.error("Failed to fetch cancellation info:", fetchError);
-                // Continue even if this fails, but maybe log it
+                console.error("[New Subscription] Error fetching cancellation info:", fetchError);
+                // Continue even if this fails
             }
 
             // Step 3: Success
             setStatus('success');
 
             // Wait a bit for the user to see the success message
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Force a hard refresh/navigation to ensure data is visible
             router.refresh();
