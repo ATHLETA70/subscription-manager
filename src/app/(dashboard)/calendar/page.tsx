@@ -3,6 +3,7 @@
 import { Calendar } from "@/components/calendar/calendar";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function CalendarPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -24,7 +25,7 @@ export default function CalendarPage() {
     }, []);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     return (

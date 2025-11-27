@@ -109,12 +109,19 @@ export function RegistrationNav({
                             <ExternalLink className="w-4 h-4" />
                         </a>
                     ) : (
-                        <button
-                            disabled
-                            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-muted text-muted-foreground rounded-xl font-medium cursor-not-allowed"
-                        >
-                            公開情報ではURLを取得できませんでした
-                        </button>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-600 shadow-sm">
+                                    <span className="text-slate-500 dark:text-slate-400 font-bold">?</span>
+                                </div>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                    該当のURLは見つかりませんでした
+                                </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                公開情報から登録ページのURLを特定できませんでした。お手数ですが、下のボタンから手動でURLを設定してください。
+                            </p>
+                        </div>
                     )}
 
                     <div className="flex justify-end">

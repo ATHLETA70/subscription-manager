@@ -12,6 +12,7 @@ import { getCancellationInfo, CancellationInfo } from "@/actions/cancellation";
 import { getRegistrationInfo, RegistrationInfo } from "@/actions/registration";
 import { toast } from "sonner";
 import { AIProcessingOverlay, AIProcessingStatus } from "@/components/ui/ai-processing-overlay";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Default fallback only
 const DEFAULT_CANCELLATION_INFO: CancellationInfo = {
@@ -61,7 +62,7 @@ function SubscriptionDetailContent() {
             if (isInactive) {
                 // Fetch registration info for cancelled subscriptions
                 try {
-                    const regInfo = await getRegistrationInfo(subData.name);
+                    const regInfo = await getRegistrationInfo(subData.name, subData.id);
                     if (regInfo) {
                         setRegistrationData(regInfo);
                     }
@@ -95,7 +96,7 @@ function SubscriptionDetailContent() {
     }, [id]);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     if (!sub) {
@@ -294,18 +295,30 @@ function SubscriptionDetailContent() {
                             <h2 className="text-xl font-semibold">再登録アシスタント</h2>
                             <button
                                 onClick={async () => {
-                                    const toastId = toast.loading("情報を更新中...");
+                                    setAnalyzingStatus("processing");
                                     try {
                                         const { refreshRegistrationInfo } = await import("@/actions/registration");
-                                        const newData = await refreshRegistrationInfo(sub.name);
+                                        const newData = await refreshRegistrationInfo(sub.name, sub.id);
+
                                         if (newData) {
+                                            setAnalyzingStatus("success");
+                                            await new Promise(resolve => setTimeout(resolve, 3000));
+
                                             setRegistrationData(newData);
-                                            toast.success("情報を更新しました", { id: toastId });
+                                            // Update local state
+                                            setSub({ ...sub, registration_info: newData });
+                                            toast.success("情報を更新しました");
                                         } else {
-                                            toast.error("情報の取得に失敗しました", { id: toastId });
+                                            setAnalyzingStatus("error");
+                                            await new Promise(resolve => setTimeout(resolve, 3000));
+                                            toast.error("情報の取得に失敗しました");
                                         }
                                     } catch (e) {
-                                        toast.error("エラーが発生しました", { id: toastId });
+                                        setAnalyzingStatus("error");
+                                        await new Promise(resolve => setTimeout(resolve, 3000));
+                                        toast.error("エラーが発生しました");
+                                    } finally {
+                                        setAnalyzingStatus("idle");
                                     }
                                 }}
                                 className="text-xs text-muted-foreground hover:text-primary underline"
@@ -323,13 +336,15 @@ function SubscriptionDetailContent() {
                                 const toastId = toast.loading("URLを更新中...");
                                 try {
                                     const { updateRegistrationUrl } = await import("@/actions/registration");
-                                    const success = await updateRegistrationUrl(sub.name, newUrl);
+                                    const success = await updateRegistrationUrl(sub.id, newUrl);
                                     if (success) {
                                         setRegistrationData({
                                             ...registrationData,
                                             registration_url: newUrl,
                                             verified: true,
                                         } as RegistrationInfo);
+                                        // Update local state
+                                        setSub({ ...sub, registration_info: { ...registrationData, registration_url: newUrl, verified: true } });
                                         toast.success("URLを更新しました", { id: toastId });
                                     } else {
                                         toast.error("更新に失敗しました", { id: toastId });
@@ -348,7 +363,7 @@ function SubscriptionDetailContent() {
 
 export default function SubscriptionDetailPage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center">読み込み中...</div>}>
+        <Suspense fallback={<LoadingSpinner />}>
             <SubscriptionDetailContent />
         </Suspense>
     );

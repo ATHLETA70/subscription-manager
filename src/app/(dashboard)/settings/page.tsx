@@ -9,11 +9,15 @@ import { useEffect, useState } from "react";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/actions/notifications";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { CategoryManagement } from "@/components/settings/category-management";
+
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [daysBeforeBilling, setDaysBeforeBilling] = useState(7);
+  const [pushNotifications, setPushNotifications] = useState(true);
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
@@ -29,6 +33,7 @@ export default function SettingsPage() {
       const preferences = await getNotificationPreferences();
       if (preferences) {
         setDaysBeforeBilling(preferences.days_before_billing);
+        setPushNotifications(preferences.push_notifications);
       }
 
       setLoading(false);
@@ -38,7 +43,7 @@ export default function SettingsPage() {
 
   const handleSaveNotificationSettings = async () => {
     setSavingNotifications(true);
-    const result = await updateNotificationPreferences(daysBeforeBilling, false);
+    const result = await updateNotificationPreferences(daysBeforeBilling, false, pushNotifications);
 
     if (result.success) {
       toast.success("通知設定を保存しました");
@@ -95,13 +100,20 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Category Management Section */}
+      <section className="space-y-4">
+        <div className="p-6 rounded-xl border bg-card">
+          <CategoryManagement />
+        </div>
+      </section>
+
       {/* Notification Settings Section */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Bell className="w-5 h-5" />
           通知設定
         </h2>
-        <div className="p-6 rounded-xl border bg-card space-y-4">
+        <div className="p-6 rounded-xl border bg-card space-y-6">
           <div className="space-y-2">
             <label htmlFor="daysBeforeBilling" className="text-sm font-medium">
               請求日の何日前に通知しますか？
@@ -120,6 +132,29 @@ export default function SettingsPage() {
               <option value="14">14日前</option>
               <option value="30">30日前</option>
             </select>
+          </div>
+
+          <div className="flex items-center justify-between space-x-2">
+            <div className="space-y-0.5">
+              <label htmlFor="pushNotifications" className="text-sm font-medium">
+                プッシュ通知
+              </label>
+              <p className="text-xs text-muted-foreground">
+                アプリ版でのみ利用可能です
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="pushNotifications"
+                checked={pushNotifications}
+                onChange={(e) => setPushNotifications(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-muted-foreground">
+                {pushNotifications ? "ON" : "OFF"}
+              </span>
+            </div>
           </div>
 
           <button

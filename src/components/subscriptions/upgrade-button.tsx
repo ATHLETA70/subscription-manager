@@ -40,7 +40,7 @@ export function UpgradeButton() {
 
     return (
         <Button onClick={handleUpgrade} disabled={loading} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0">
-            {loading ? '処理中...' : 'プレミアムプランにアップグレード (¥200/月)'}
+            {loading ? '処理中...' : 'プレミアムプランにアップグレード (¥280/月)'}
         </Button>
     );
 }

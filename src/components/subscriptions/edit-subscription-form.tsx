@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Subscription } from "@/types/subscription";
+import { createCustomCategory } from "@/actions/categories";
+import { CategorySelect } from "@/components/subscriptions/category-select";
 
 export function EditSubscriptionForm({ subscription }: { subscription: Subscription }) {
     const router = useRouter();
@@ -14,6 +16,8 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
     const [error, setError] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState<string>(subscription.status || 'active');
+    const [isCustomCategory, setIsCustomCategory] = useState(false);
+    const [category, setCategory] = useState(subscription.category || "");
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -24,10 +28,20 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
         const name = formData.get("name") as string;
         const amountStr = formData.get("amount") as string;
         const cycle = formData.get("cycle") as string;
-        const category = formData.get("category") as string;
+        let category = formData.get("category") as string;
         const nextBillingDate = formData.get("nextBillingDate") as string;
         const status = formData.get("status") as string;
         const memo = formData.get("memo") as string;
+
+        // If custom category, save it to database first
+        if (isCustomCategory && category) {
+            const result = await createCustomCategory(category);
+            if (!result.success) {
+                setError(result.error || "カテゴリの作成に失敗しました");
+                setLoading(false);
+                return;
+            }
+        }
 
         // Parse amount (remove ¥ and commas)
         let amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
@@ -192,27 +206,37 @@ export function EditSubscriptionForm({ subscription }: { subscription: Subscript
 
                     <div className="grid gap-2">
                         <label htmlFor="category" className="text-sm font-medium">カテゴリ *</label>
-                        <select
-                            id="category"
-                            name="category"
-                            required
-                            defaultValue={subscription.category}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="">カテゴリを選択</option>
-                            <option value="エンタメ">エンタメ</option>
-                            <option value="音楽">音楽</option>
-                            <option value="仕事効率化">仕事効率化</option>
-                            <option value="ショッピング">ショッピング</option>
-                            <option value="スポーツ">スポーツ</option>
-                            <option value="その他">その他</option>
-                            {/* If the current category is not in the standard list, add it as an option */}
-                            {subscription.category && ![
-                                "エンタメ", "音楽", "仕事効率化", "ショッピング", "スポーツ", "その他"
-                            ].includes(subscription.category) && (
-                                    <option value={subscription.category}>{subscription.category}</option>
-                                )}
-                        </select>
+                        {!isCustomCategory ? (
+                            <>
+                                <CategorySelect
+                                    value={category}
+                                    onValueChange={setCategory}
+                                    onCustomCategoryMode={setIsCustomCategory}
+                                    defaultValue={subscription.category}
+                                />
+                                {/* Hidden input to submit category value */}
+                                <input type="hidden" name="category" value={category} />
+                            </>
+                        ) : (
+                            <div className="flex gap-2 items-center">
+                                <input
+                                    id="category"
+                                    name="category"
+                                    type="text"
+                                    required
+                                    placeholder="カテゴリ名を入力 (例: 教育)"
+                                    className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCustomCategory(false)}
+                                    className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border rounded-md hover:bg-accent whitespace-nowrap h-10"
+                                >
+                                    選択に戻る
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-2">

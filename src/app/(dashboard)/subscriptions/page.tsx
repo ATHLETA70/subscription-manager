@@ -6,6 +6,7 @@ import { CancelledSubscriptions } from "@/components/subscriptions/cancelled-sub
 import { TrialSubscriptions } from "@/components/subscriptions/trial-subscriptions";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function SubscriptionsPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -13,12 +14,15 @@ export default function SubscriptionsPage() {
 
     const fetchData = useCallback(async () => {
         const supabase = createClient();
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('subscriptions')
-            .select('*');
+            .select('*')
+            .order('next_payment_date', { ascending: true });
 
-        if (data) {
-            setSubscriptions(data);
+        if (error) {
+            console.error('Error fetching subscriptions:', error);
+        } else {
+            setSubscriptions(data || []);
         }
         setLoading(false);
     }, []);
@@ -28,7 +32,7 @@ export default function SubscriptionsPage() {
     }, [fetchData]);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     return (
@@ -46,3 +50,4 @@ export default function SubscriptionsPage() {
         </div>
     );
 }
+

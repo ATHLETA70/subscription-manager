@@ -8,6 +8,8 @@ import { DashboardCharts } from "@/components/dashboard/charts";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
 export default function DashboardPage() {
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function DashboardPage() {
     }, [fetchData]);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     return (

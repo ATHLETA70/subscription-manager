@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { getNotificationPreferences } from "@/actions/notifications";
 
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
 export default function NotificationsPage() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function NotificationsPage() {
     }, []);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     const safeSubscriptions = subscriptions || [];

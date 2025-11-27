@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCancellationInfo } from "@/actions/cancellation";
 import { useUserPlan } from "@/hooks/use-user-plan";
+import { createCustomCategory } from "@/actions/categories";
+import { CategorySelect } from "@/components/subscriptions/category-select";
 
 export function NewSubscriptionForm() {
     const router = useRouter();
@@ -16,6 +18,7 @@ export function NewSubscriptionForm() {
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState('active');
     const { plan, loading: planLoading } = useUserPlan();
+    const [category, setCategory] = useState("");
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -26,9 +29,19 @@ export function NewSubscriptionForm() {
         const name = formData.get("name") as string;
         const amountStr = formData.get("amount") as string;
         const cycle = formData.get("cycle") as string;
-        const category = formData.get("category") as string;
+        let category = formData.get("category") as string;
         const billingDate = formData.get("billingDate") as string;
         // subscriptionStatus state is used instead of getting from formData directly for consistency
+
+        // If custom category, save it to database first
+        if (isCustomCategory && category) {
+            const result = await createCustomCategory(category);
+            if (!result.success) {
+                setError(result.error || "カテゴリの作成に失敗しました");
+                setStatus('idle');
+                return;
+            }
+        }
 
         // Parse amount (remove ¥ and commas)
         let amount = parseInt(amountStr.replace(/[^0-9]/g, ""));
@@ -253,26 +266,15 @@ export function NewSubscriptionForm() {
                     <div className="grid gap-2">
                         <label htmlFor="category" className="text-sm font-medium">カテゴリ *</label>
                         {!isCustomCategory ? (
-                            <select
-                                id="category"
-                                name="category"
-                                required
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                onChange={(e) => {
-                                    if (e.target.value === 'custom') {
-                                        setIsCustomCategory(true);
-                                    }
-                                }}
-                            >
-                                <option value="">カテゴリを選択</option>
-                                <option value="エンタメ">エンタメ</option>
-                                <option value="音楽">音楽</option>
-                                <option value="仕事効率化">仕事効率化</option>
-                                <option value="ショッピング">ショッピング</option>
-                                <option value="スポーツ">スポーツ</option>
-                                <option value="その他">その他</option>
-                                <option value="custom">＋ 新しいカテゴリを入力...</option>
-                            </select>
+                            <>
+                                <CategorySelect
+                                    value={category}
+                                    onValueChange={setCategory}
+                                    onCustomCategoryMode={setIsCustomCategory}
+                                />
+                                {/* Hidden input to submit category value */}
+                                <input type="hidden" name="category" value={category} />
+                            </>
                         ) : (
                             <div className="flex gap-2 items-center">
                                 <input

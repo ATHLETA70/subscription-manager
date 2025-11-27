@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export interface NotificationPreferences {
     days_before_billing: number;
     email_notifications: boolean;
+    push_notifications: boolean;
 }
 
 /**
@@ -24,7 +25,11 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
         .single();
 
     // Return existing preferences or default values
-    return data || { days_before_billing: 7, email_notifications: false };
+    return data || {
+        days_before_billing: 7,
+        email_notifications: false,
+        push_notifications: true
+    };
 }
 
 /**
@@ -32,7 +37,8 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
  */
 export async function updateNotificationPreferences(
     daysBeforeBilling: number,
-    emailNotifications: boolean = false
+    emailNotifications: boolean = false,
+    pushNotifications: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,6 +59,7 @@ export async function updateNotificationPreferences(
                 user_id: user.id,
                 days_before_billing: daysBeforeBilling,
                 email_notifications: emailNotifications,
+                push_notifications: pushNotifications,
                 updated_at: new Date().toISOString(),
             }, { onConflict: 'user_id' });
 

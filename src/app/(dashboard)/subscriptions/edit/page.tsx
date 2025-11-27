@@ -4,6 +4,7 @@ import { EditSubscriptionForm } from "@/components/subscriptions/edit-subscripti
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function EditSubscriptionContent() {
     const searchParams = useSearchParams();
@@ -33,7 +34,7 @@ function EditSubscriptionContent() {
     }, [id]);
 
     if (loading) {
-        return <div className="p-8 text-center">読み込み中...</div>;
+        return <LoadingSpinner />;
     }
 
     if (!subscription) {
@@ -45,7 +46,7 @@ function EditSubscriptionContent() {
 
 export default function EditSubscriptionPage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center">読み込み中...</div>}>
+        <Suspense fallback={<LoadingSpinner />}>
             <EditSubscriptionContent />
         </Suspense>
     );
