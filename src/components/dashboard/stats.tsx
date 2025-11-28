@@ -64,19 +64,19 @@ export function DashboardStats({ subscriptions }: { subscriptions: Subscription[
                     <div
                         key={index}
                         className={cn(
-                            "p-3 md:p-6 rounded-xl md:rounded-2xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md",
+                            "p-2.5 md:p-6 rounded-xl md:rounded-2xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md",
                             stat.alert && "border-yellow-500/50 bg-yellow-500/5"
                         )}
                     >
                         <div className="flex items-center justify-between space-y-0 pb-1 md:pb-2">
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground truncate mr-1">
+                            <p className="text-[10px] md:text-sm font-medium text-muted-foreground truncate mr-1">
                                 {stat.title}
                             </p>
                             <Icon className={cn("h-3 w-3 md:h-4 md:w-4 flex-shrink-0", stat.alert ? "text-yellow-500" : "text-muted-foreground")} />
                         </div>
                         <div className="flex flex-col gap-0.5 md:gap-1">
-                            <div className="text-lg md:text-2xl font-bold">{stat.value}</div>
-                            <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                            <div className="text-base md:text-2xl font-bold">{stat.value}</div>
+                            <p className="text-[9px] md:text-xs text-muted-foreground truncate">
                                 {stat.change}
                             </p>
                         </div>

@@ -41,5 +41,5 @@ export async function getUserPlan(supabase: SupabaseClient, userId: string): Pro
 export const userPlan = {
     type: 'free',
     limit: 5,
-    price: 200
+    price: 280
 };

@@ -81,32 +81,14 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                 <div className="flex gap-2">
                     <button
                         onClick={handleNewSubscription}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                        className="group inline-flex items-center gap-2 pl-4 pr-5 py-2.5 text-sm font-semibold text-primary-foreground bg-primary rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-95"
                     >
-                        <Plus className="w-4 h-4" />
-                        新規登録
+                        <div className="p-1 rounded-full bg-white/20 group-hover:bg-white/30 transition-colors">
+                            <Plus className="w-4 h-4" />
+                        </div>
+                        <span>新規登録</span>
                     </button>
                 </div>
-            </div>
-
-            {/* Debug/Fix Data Button (Temporary) */}
-            <div className="flex justify-end mb-2">
-                <button
-                    onClick={async () => {
-                        if (!confirm("データの所有権を修正しますか？\n(表示されないデータがある場合に有効です)")) return;
-                        const { fixSubscriptionOwnership } = await import("@/actions/fix-data");
-                        const result = await fixSubscriptionOwnership();
-                        if (result.success) {
-                            toast.success(`${result.count}件のデータを修正しました`);
-                            router.refresh();
-                        } else {
-                            toast.error(`修正に失敗しました: ${result.error}`);
-                        }
-                    }}
-                    className="text-xs text-muted-foreground hover:text-primary underline"
-                >
-                    データが表示されない/更新できない場合はこちら
-                </button>
             </div>
 
             {/* Mobile View (Cards) */}

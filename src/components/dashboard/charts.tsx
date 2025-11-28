@@ -182,9 +182,9 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                 {/* Pie Chart: Active Subscriptions */}
                 <div className={cn("p-3 md:p-6 rounded-xl border bg-card shadow-sm", activeTab === 'service' ? "block" : "hidden md:block")}>
                     <h3 className="text-sm font-medium text-muted-foreground mb-4">当月の契約中のサブスクリプション (月額)</h3>
-                    <div className="h-[280px] md:h-[350px] w-full relative">
+                    <div className="h-[240px] md:h-[350px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%">
-                            <PieChart margin={{ top: 40, right: 20, bottom: 20, left: 20 }}>
+                            <PieChart margin={{ top: 50, right: 25, bottom: 25, left: 25 }} className="md:!mt-0">
                                 <Pie
                                     data={serviceData}
                                     cx="50%"
@@ -203,7 +203,7 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                                     }) => {
                                         if (!midAngle || !percent || !cx || !cy || !outerRadius || !fill) return null;
                                         const RADIAN = Math.PI / 180;
-                                        const radius = outerRadius + 25;
+                                        const radius = outerRadius + 30;
                                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                                         return (
@@ -213,7 +213,7 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                                                 fill={fill}
                                                 textAnchor={x > cx ? 'start' : 'end'}
                                                 dominantBaseline="central"
-                                                className="text-xs font-medium"
+                                                className="text-[10px] md:text-xs font-medium"
                                             >
                                                 {`${(percent * 100).toFixed(0)}%`}
                                             </text>
@@ -260,9 +260,9 @@ export function DashboardCharts({ subscriptions }: { subscriptions: Subscription
                             </PieChart>
                         </ResponsiveContainer>
                         {/* Center Text */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-12">
-                            <div className="text-xs md:text-sm font-medium text-muted-foreground mb-1">今月の合計</div>
-                            <div className="text-2xl md:text-3xl font-bold tracking-tight">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-14 md:pt-12">
+                            <div className="text-[10px] md:text-sm font-medium text-muted-foreground mb-0.5 md:mb-1">今月の合計</div>
+                            <div className="text-xl md:text-3xl font-bold tracking-tight">
                                 ¥{serviceData.reduce((sum, item) => sum + item.value, 0).toLocaleString()}
                             </div>
                         </div>

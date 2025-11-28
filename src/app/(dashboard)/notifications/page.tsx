@@ -57,11 +57,16 @@ export default function NotificationsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">通知</h1>
-                <p className="text-muted-foreground">
-                    次回請求日（解約期限）が近づいているサブスクリプション
-                </p>
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                    <Bell className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight">通知</h1>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                        次回請求日（解約期限）が近づいているサブスクリプション
+                    </p>
+                </div>
             </div>
 
             <div className="space-y-4">

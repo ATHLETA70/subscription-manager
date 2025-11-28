@@ -114,6 +114,57 @@ export async function deleteCategoryWithReassignment(categoryName: string): Prom
 }
 
 /**
+ * Update a category name
+ * Updates all subscriptions using the old category name to the new name
+ */
+export async function updateCategory(oldName: string, newName: string): Promise<{
+    success: boolean;
+    updated: number;
+    error?: string;
+}> {
+    console.log(`[Categories] Updating category from "${oldName}" to "${newName}"`);
+    const supabase = await createClient();
+
+    // Validate new name
+    if (!newName || newName.trim().length === 0) {
+        return { success: false, updated: 0, error: "カテゴリ名を入力してください" };
+    }
+
+    const DEFAULT_CATEGORIES = ["エンタメ", "音楽", "仕事効率化", "ショッピング", "スポーツ", "その他"];
+    if (DEFAULT_CATEGORIES.includes(newName)) {
+        return { success: false, updated: 0, error: "デフォルトカテゴリと同じ名前は使用できません" };
+    }
+
+    // Check if new name is already in use by another custom category (optional, but good practice)
+    // For now, we allow merging if the user intentionally renames to an existing custom category
+
+    // Get count of subscriptions to be updated
+    const { count, error: countError } = await supabase
+        .from("subscriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("category", oldName);
+
+    if (countError) {
+        console.error("[Categories] Error counting subscriptions:", countError);
+        return { success: false, updated: 0, error: countError.message };
+    }
+
+    // Update all subscriptions
+    const { error: updateError } = await supabase
+        .from("subscriptions")
+        .update({ category: newName })
+        .eq("category", oldName);
+
+    if (updateError) {
+        console.error("[Categories] Error updating category:", updateError);
+        return { success: false, updated: 0, error: updateError.message };
+    }
+
+    console.log(`[Categories] Successfully updated ${count || 0} subscriptions to "${newName}"`);
+    return { success: true, updated: count || 0 };
+}
+
+/**
  * Check if a category is in use by any subscription
  */
 export async function isCategoryInUse(categoryName: string): Promise<boolean> {

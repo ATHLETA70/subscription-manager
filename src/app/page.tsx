@@ -20,7 +20,7 @@ export default async function Home() {
       <div className="absolute top-0 right-0 p-6 w-full flex justify-end z-50">
         <Link
           href="/login"
-          className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-4 py-2"
+          className="text-base font-medium text-foreground hover:text-primary transition-colors px-8 py-3 rounded-full border border-border/50 hover:bg-accent/50 hover:border-primary/50 backdrop-blur-sm shadow-sm"
         >
           Login
         </Link>
@@ -29,28 +29,27 @@ export default async function Home() {
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center gap-8 max-w-4xl mx-auto mt-[-10vh]">
         {/* Background Effects */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] -z-10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] -z-10 animate-fade-in" />
 
-        <div className="p-4 bg-background/50 rounded-2xl border border-border/50 backdrop-blur-sm shadow-sm">
+        <div className="p-4 bg-background/50 rounded-2xl border border-border/50 backdrop-blur-sm shadow-sm animate-fade-in-up">
           <CreditCard className="w-12 h-12 text-primary" />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6 animate-fade-in-up delay-100">
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
             Subscription Manager
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Manage all your subscriptions in one place. Track expenses, renewal dates, and optimize your spending with our premium dashboard.
+            AIが解約方法を自動検索。<br className="hidden sm:block" />
+            すべてのサブスクリプションを一元管理し、<br className="hidden sm:block" />
+            支出と更新日を賢く最適化する、次世代の管理ツール。
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto">
-          <Link href="/signup" className="px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+        <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto animate-fade-in-up delay-200">
+          <Link href="/signup" className="px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 duration-300">
             Get Started <ArrowRight className="w-4 h-4" />
           </Link>
-          <button className="px-8 py-4 rounded-full bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 transition-all border border-border/50">
-            Learn More
-          </button>
         </div>
       </div>
     </main>
