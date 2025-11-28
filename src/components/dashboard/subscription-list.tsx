@@ -202,51 +202,87 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                                     さらに多くのサブスクを管理するには<br />
                                     プレミアムプランへのアップグレードがおすすめです！
                                 </p>
-                                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4">
-                                    <p className="text-xs text-muted-foreground mb-1">プレミアムプラン</p>
-                                    <p className="text-2xl font-bold text-primary mb-2">¥{userPlan.price}<span className="text-sm font-normal text-muted-foreground">/月</span></p>
-                                    <ul className="text-xs text-left space-y-1.5">
-                                        <li className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                <div className="space-y-6">
+                                    <div className="bg-white dark:bg-slate-950 rounded-xl shadow-sm border p-6 flex items-center gap-6">
+                                        <div className="p-4 bg-[#E184DF]/10 rounded-xl shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28px" height="32px" viewBox="0 0 14 16" version="1.1">
+                                                <g id="Flow" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+                                                    <g id="0-Default" transform="translate(-121.000000, -40.000000)" fill="#E184DF">
+                                                        <path d="M127,50 L126,50 C123.238576,50 121,47.7614237 121,45 C121,42.2385763 123.238576,40 126,40 L135,40 L135,56 L133,56 L133,42 L129,42 L129,56 L127,56 L127,50 Z M127,48 L127,42 L126,42 C124.343146,42 123,43.3431458 123,45 C123,46.6568542 124.343146,48 126,48 L127,48 Z" id="Pilcrow" />
+                                                    </g>
+                                                </g>
                                             </svg>
-                                            <span>無制限のサブスク登録</span>
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span>高度な分析機能</span>
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span>優先サポート</span>
-                                        </li>
-                                    </ul>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="text-xl font-bold text-foreground">Premium Plan</h3>
+                                            <h5 className="text-lg font-medium text-muted-foreground">¥{userPlan.price} <span className="text-sm">/ month</span></h5>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <p>
+                                            現在、フリープランで管理できる<br />
+                                            <span className="font-bold text-foreground">最大{userPlan.limit}つのサブスクリプション</span>を<br />
+                                            すでに登録されています。
+                                        </p>
+                                        <p>
+                                            さらに多くのサブスクを管理するには<br />
+                                            プレミアムプランへのアップグレードがおすすめです！
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Buttons */}
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => {
-                                    setShowLimitModal(false);
-                                    // TODO: Navigate to upgrade page
-                                    toast.success('アップグレード機能は準備中です');
-                                }}
-                                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 transition-colors"
-                            >
-                                プレミアムプランにアップグレード
-                            </button>
-                            <button
-                                onClick={() => setShowLimitModal(false)}
-                                className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 transition-colors"
-                            >
-                                閉じる
-                            </button>
+                            {/* Buttons */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={async () => {
+                                        const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+                                        if (!priceId) {
+                                            toast.error('Stripeの設定が不足しています (Price ID)');
+                                            return;
+                                        }
+
+                                        try {
+                                            toast.loading('決済画面へ移動中...');
+                                            const res = await fetch('/api/stripe/checkout', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify({
+                                                    priceId,
+                                                }),
+                                            });
+
+                                            if (!res.ok) {
+                                                const errorText = await res.text();
+                                                throw new Error(errorText || 'Failed to create checkout session');
+                                            }
+
+                                            const { url } = await res.json();
+                                            if (url) {
+                                                window.location.href = url;
+                                            } else {
+                                                throw new Error('No checkout URL returned');
+                                            }
+                                        } catch (error) {
+                                            console.error(error);
+                                            toast.dismiss();
+                                            toast.error(error instanceof Error ? error.message : 'アップグレードの開始に失敗しました');
+                                        }
+                                    }}
+                                    className="w-full inline-flex items-center justify-center rounded-md text-sm font-bold bg-[#556cd6] text-white hover:bg-[#445acb] h-11 px-8 transition-colors shadow-sm"
+                                >
+                                    Checkout
+                                </button>
+                                <button
+                                    onClick={() => setShowLimitModal(false)}
+                                    className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 transition-colors"
+                                >
+                                    閉じる
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

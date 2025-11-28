@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, CreditCard, Settings, Bell, Calendar } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { userPlan } from "@/lib/user-plan";
 import { useEffect, useState } from "react";
@@ -71,7 +72,45 @@ export function Sidebar() {
                         <p className="text-xs text-muted-foreground mb-3">
                             無制限の登録と高度な分析機能
                         </p>
-                        <button className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors">
+                        <button
+                            onClick={async () => {
+                                const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+                                if (!priceId) {
+                                    toast.error('Stripeの設定が不足しています (Price ID)');
+                                    return;
+                                }
+
+                                try {
+                                    toast.loading('決済画面へ移動中...');
+                                    const res = await fetch('/api/stripe/checkout', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            priceId,
+                                        }),
+                                    });
+
+                                    if (!res.ok) {
+                                        const errorText = await res.text();
+                                        throw new Error(errorText || 'Failed to create checkout session');
+                                    }
+
+                                    const { url } = await res.json();
+                                    if (url) {
+                                        window.location.href = url;
+                                    } else {
+                                        throw new Error('No checkout URL returned');
+                                    }
+                                } catch (error) {
+                                    console.error(error);
+                                    toast.dismiss();
+                                    toast.error(error instanceof Error ? error.message : 'アップグレードの開始に失敗しました');
+                                }
+                            }}
+                            className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors"
+                        >
                             アップグレード (¥280/月)
                         </button>
                     </div>

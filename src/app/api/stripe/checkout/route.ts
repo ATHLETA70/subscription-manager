@@ -13,6 +13,11 @@ export async function POST(req: Request) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('STRIPE_SECRET_KEY is missing');
+            return new NextResponse('Stripe configuration error', { status: 500 });
+        }
+
         const { priceId } = await req.json();
 
         const session = await stripe.checkout.sessions.create({

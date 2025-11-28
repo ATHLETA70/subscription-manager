@@ -8,6 +8,12 @@ export function UpgradeButton() {
     const [loading, setLoading] = useState(false);
 
     const handleUpgrade = async () => {
+        const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+        if (!priceId) {
+            toast.error('Stripeの設定が不足しています (Price ID)');
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await fetch('/api/stripe/checkout', {
@@ -16,7 +22,7 @@ export function UpgradeButton() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID,
+                    priceId,
                 }),
             });
 
