@@ -67,10 +67,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-20">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-full">
-          <Settings className="w-6 h-6 text-primary" />
+    <div className="max-w-3xl mx-auto space-y-4 md:space-y-8 pb-20">
+      <div className="flex items-center gap-3 md:gap-4">
+        <div className="p-2 md:p-3 bg-primary/10 rounded-full">
+          <Settings className="w-5 h-5 md:w-6 md:h-6 text-primary" />
         </div>
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">設定</h1>
@@ -80,30 +80,30 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="space-y-6 md:space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {/* Profile Section */}
-        <section className="space-y-3">
+        <section className="space-y-2 md:space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <User className="w-4 h-4" />
             プロフィール
           </h2>
-          <div className="p-4 md:p-6 rounded-xl border bg-card shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <User className="w-6 h-6 md:w-7 md:h-7 text-primary" />
+          <div className="p-3 md:p-6 rounded-xl border bg-card shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 md:w-7 md:h-7 text-primary" />
               </div>
               <div className="min-w-0">
-                <div className="font-semibold text-base md:text-lg truncate">ユーザー</div>
-                <div className="text-sm text-muted-foreground truncate">{user?.email || "guest@example.com"}</div>
+                <div className="font-semibold text-sm md:text-lg truncate">ユーザー</div>
+                <div className="text-xs md:text-sm text-muted-foreground truncate">{user?.email || "guest@example.com"}</div>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-destructive hover:text-destructive"
+              className="inline-flex items-center justify-center gap-2 rounded-md text-xs md:text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 md:h-9 px-4 py-2 text-destructive hover:text-destructive"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
               {loggingOut ? "ログアウト中..." : "ログアウト"}
             </button>
           </div>
@@ -116,62 +116,62 @@ export default function SettingsPage() {
             プラン
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-3 md:gap-4">
             {/* Current Plan Card */}
-            <div className="p-4 md:p-6 rounded-xl border bg-card shadow-sm space-y-4 relative overflow-hidden">
+            <div className="p-3 md:p-6 rounded-xl border bg-card shadow-sm space-y-3 md:space-y-4 relative overflow-hidden">
               <div className="flex items-center justify-between relative z-10">
                 <div>
                   <div className="text-xs text-muted-foreground font-medium mb-1">現在利用中</div>
-                  <div className="text-xl md:text-2xl font-bold">
+                  <div className="text-lg md:text-2xl font-bold">
                     {plan?.type === 'premium' ? 'プレミアムプラン' : 'フリープラン'}
                   </div>
                 </div>
-                <div className="p-2 rounded-full bg-secondary">
-                  <User className="w-5 h-5" />
+                <div className="p-1.5 md:p-2 rounded-full bg-secondary">
+                  <User className="w-4 h-4 md:w-5 md:h-5" />
                 </div>
               </div>
-              <div className="space-y-2 relative z-10">
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-green-500" />
+              <div className="space-y-1.5 md:space-y-2 relative z-10">
+                <div className="flex items-center gap-2 text-xs md:text-sm">
+                  <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-500" />
                   {plan?.type === 'premium'
                     ? 'サブスク管理 (無制限)'
                     : `サブスク管理 (最大${plan?.limit || 5}つ)`}
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="w-4 h-4 text-green-500" /> 基本的な解約サポート
+                <div className="flex items-center gap-2 text-xs md:text-sm">
+                  <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-500" /> 基本的な解約サポート
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Check className="w-4 h-4 text-muted-foreground" /> 高度な分析機能
+                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                  <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" /> 高度な分析機能
                 </div>
               </div>
             </div>
 
             {/* Upgrade Card */}
             {plan?.type !== 'premium' && (
-              <div className="p-4 md:p-6 rounded-xl border border-primary/50 bg-primary/5 shadow-sm space-y-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <Zap className="w-24 h-24" />
+              <div className="p-3 md:p-6 rounded-xl border border-primary/50 bg-primary/5 shadow-sm space-y-3 md:space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-2 md:p-4 opacity-10">
+                  <Zap className="w-16 h-16 md:w-24 md:h-24" />
                 </div>
 
                 <div className="flex items-center justify-between relative z-10">
                   <div>
                     <div className="text-xs text-primary font-medium mb-1">おすすめ</div>
-                    <div className="text-xl md:text-2xl font-bold">プレミアムプラン</div>
+                    <div className="text-lg md:text-2xl font-bold">プレミアムプラン</div>
                   </div>
-                  <div className="p-2 rounded-full bg-primary text-primary-foreground">
-                    <Zap className="w-5 h-5" />
+                  <div className="p-1.5 md:p-2 rounded-full bg-primary text-primary-foreground">
+                    <Zap className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
                 </div>
 
-                <div className="space-y-2 relative z-10">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary" /> 無制限のサブスク登録
+                <div className="space-y-1.5 md:space-y-2 relative z-10">
+                  <div className="flex items-center gap-2 text-xs md:text-sm">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" /> 無制限のサブスク登録
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary" /> 優先サポート
+                  <div className="flex items-center gap-2 text-xs md:text-sm">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" /> 優先サポート
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary" /> 広告非表示
+                  <div className="flex items-center gap-2 text-xs md:text-sm">
+                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" /> 広告非表示
                   </div>
                 </div>
 
@@ -187,7 +187,7 @@ export default function SettingsPage() {
             <Palette className="w-4 h-4" />
             外観
           </h2>
-          <div className="p-4 md:p-6 rounded-xl border bg-card shadow-sm">
+          <div className="p-3 md:p-6 rounded-xl border bg-card shadow-sm">
             <ThemeSelector />
           </div>
         </section>
@@ -198,7 +198,7 @@ export default function SettingsPage() {
             <Bell className="w-4 h-4" />
             通知設定
           </h2>
-          <div className="p-4 md:p-6 rounded-xl border bg-card shadow-sm space-y-6">
+          <div className="p-3 md:p-6 rounded-xl border bg-card shadow-sm space-y-4 md:space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label htmlFor="daysBeforeBilling" className="text-sm font-medium">
