@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Calendar, FileText, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Edit, Calculator, Clock } from "lucide-react";
 import Link from "next/link";
 import { CancellationNav } from "@/components/cancellation/cancellation-nav";
 import { RegistrationNav } from "@/components/registration/registration-nav";
@@ -116,12 +116,36 @@ function SubscriptionDetailContent() {
     const displayAmount = `¥${sub.amount.toLocaleString()}`;
     const displayNextBilling = sub.next_payment_date || "未設定";
 
+    // Calculate payment statistics
+    const firstPaymentDate = new Date(sub.first_payment_date || sub.created_at);
+    const today = new Date();
+    const daysElapsed = Math.floor(
+        (today.getTime() - firstPaymentDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const monthsElapsed = Math.max(0, Math.floor(
+        (today.getTime() - firstPaymentDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+    ));
+    const totalPayment = sub.amount * monthsElapsed;
+
+    // Generate monthly payment history
+    const paymentHistory = [];
+    for (let i = 0; i < monthsElapsed; i++) {
+        const date = new Date(firstPaymentDate);
+        date.setMonth(date.getMonth() + i);
+        paymentHistory.push({
+            month: `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月`,
+            amount: sub.amount
+        });
+    }
+    // Reverse to show most recent first
+    paymentHistory.reverse();
+
     // Check if subscription is active or cancelled
     const isActive = sub.status === 'active' || sub.status === '利用中' || sub.status === 'trial';
     const isCancelled = sub.status === 'inactive' || sub.status === '解約中';
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 pb-20">
+        <div className="max-w-2xl mx-auto space-y-5 pb-20">
             <AIProcessingOverlay status={analyzingStatus} serviceName={sub.name} />
 
             {/* Header */}
@@ -161,14 +185,14 @@ function SubscriptionDetailContent() {
             </Link>
 
             {/* Info Cards */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border bg-card space-y-1">
+            <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-xl border bg-card space-y-1">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <Calendar className="w-4 h-4" /> 次回請求日
                     </div>
                     <div className="font-semibold text-lg">{displayNextBilling}</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-card space-y-1">
+                <div className="p-3.5 rounded-xl border bg-card space-y-1">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         ステータス
                     </div>
@@ -201,13 +225,66 @@ function SubscriptionDetailContent() {
                 </div>
             </div>
 
+            {/* Payment Statistics Grid */}
+            <div className="grid grid-cols-2 gap-3">
+                {/* Total Payment Card */}
+                <div className="p-3.5 rounded-xl border bg-card space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <Calculator className="w-4 h-4" /> 累計支払い総額
+                    </div>
+                    <div className="font-semibold text-lg">
+                        ¥{totalPayment.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {monthsElapsed}ヶ月分
+                    </div>
+                </div>
+
+                {/* Days Elapsed Card */}
+                <div className="p-3.5 rounded-xl border bg-card space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <Clock className="w-4 h-4" /> 初回支払いからの経過
+                    </div>
+                    <div className="font-semibold text-lg">
+                        {daysElapsed}日
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {firstPaymentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}から
+                    </div>
+                </div>
+            </div>
+
             {/* Memo Card */}
-            <div className="p-4 rounded-xl border bg-card space-y-1">
+            <div className="p-3.5 rounded-xl border bg-card space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <FileText className="w-4 h-4" /> メモ
                 </div>
                 <div className="font-medium text-base whitespace-pre-wrap">{sub.memo || 'メモなし'}</div>
             </div>
+
+            {/* Payment History Section */}
+            {monthsElapsed > 0 && (
+                <div className="space-y-3">
+                    <h3 className="text-lg font-semibold">支払い履歴</h3>
+                    <div className="p-4 rounded-xl border bg-card max-h-80 overflow-y-auto">
+                        <div className="space-y-0">
+                            {paymentHistory.map((entry, index) => (
+                                <div
+                                    key={index}
+                                    className="flex justify-between items-center py-2 border-b border-white/5 dark:border-white/5 last:border-0"
+                                >
+                                    <span className="text-sm text-muted-foreground">
+                                        {entry.month}
+                                    </span>
+                                    <span className="font-medium">
+                                        ¥{entry.amount.toLocaleString()}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <hr className="border-border" />
 
