@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 function SubscriptionIcon({ sub }: { sub: Subscription }) {
     if (sub.image_url) {
         return (
-            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-border/10 shrink-0 p-1.5">
+            <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/10 shrink-0 p-1.5">
                 <img
                     src={sub.image_url}
                     alt={sub.name}

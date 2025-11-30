@@ -26,7 +26,7 @@ function SubscriptionIcon({ subscription }: { subscription: Subscription }) {
         >
             {/* アイコン */}
             {subscription.image_url && !imageError ? (
-                <div className="w-3.5 h-3.5 md:w-5 md:h-5 rounded bg-white flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                <div className="w-3.5 h-3.5 md:w-5 md:h-5 rounded bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden p-0.5 shrink-0">
                     <img
                         src={subscription.image_url}
                         alt={subscription.name}
