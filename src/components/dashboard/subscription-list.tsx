@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MoreHorizontal, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ import { toast } from "sonner";
 // and keep the velocity high. I can refactor to shadcn/ui later.
 
 import { Subscription } from "@/types/subscription";
-import { userPlan } from "@/lib/user-plan";
+import { useUserPlan } from "@/hooks/use-user-plan";
 
 function SubscriptionIcon({ sub }: { sub: Subscription }) {
     const [imageError, setImageError] = useState(false);
@@ -60,14 +60,23 @@ interface SubscriptionListProps {
 export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListProps) {
     const router = useRouter();
     const [showLimitModal, setShowLimitModal] = useState(false);
+    const [showDowngradeModal, setShowDowngradeModal] = useState(false);
+    const { plan, loading } = useUserPlan();
 
     // Filter to show only active subscriptions
     const activeSubscriptions = subscriptions.filter(
         sub => sub.status === 'active' || sub.status === '利用中'
     );
 
+    // Check for downgrade status on load
+    useEffect(() => {
+        if (!loading && plan?.type === 'free' && subscriptions.length > plan.limit) {
+            setShowDowngradeModal(true);
+        }
+    }, [loading, plan, subscriptions.length]);
+
     const handleNewSubscription = () => {
-        if (userPlan.type === 'free' && subscriptions.length >= userPlan.limit) {
+        if (!loading && plan?.type === 'free' && subscriptions.length >= plan.limit) {
             setShowLimitModal(true);
             return;
         }
@@ -173,7 +182,7 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                 </div>
             </div>
 
-            {/* Free Plan Limit Modal */}
+            {/* Free Plan Limit Modal (New Subscription Attempt) */}
             {showLimitModal && (
                 <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-card border rounded-2xl p-8 max-w-md w-full space-y-6 shadow-2xl animate-in zoom-in duration-300">
@@ -195,7 +204,7 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                             <div className="space-y-3 text-sm text-muted-foreground">
                                 <p>
                                     現在、フリープランで管理できる<br />
-                                    <span className="font-bold text-foreground">最大{userPlan.limit}つのサブスクリプション</span>を<br />
+                                    <span className="font-bold text-foreground">最大{plan?.limit}つのサブスクリプション</span>を<br />
                                     すでに登録されています。
                                 </p>
                                 <p className="text-base font-medium text-foreground">
@@ -215,14 +224,14 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                                         </div>
                                         <div className="space-y-1">
                                             <h3 className="text-xl font-bold text-foreground">Premium Plan</h3>
-                                            <h5 className="text-lg font-medium text-muted-foreground">¥{userPlan.price} <span className="text-sm">/ month</span></h5>
+                                            <h5 className="text-lg font-medium text-muted-foreground">¥280 <span className="text-sm">/ month</span></h5>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2 text-sm text-muted-foreground">
                                         <p>
                                             現在、フリープランで管理できる<br />
-                                            <span className="font-bold text-foreground">最大{userPlan.limit}つのサブスクリプション</span>を<br />
+                                            <span className="font-bold text-foreground">最大{plan?.limit}つのサブスクリプション</span>を<br />
                                             すでに登録されています。
                                         </p>
                                         <p>
@@ -281,6 +290,50 @@ export function SubscriptionList({ subscriptions, onUpdate }: SubscriptionListPr
                                     className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 transition-colors"
                                 >
                                     閉じる
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Downgrade Alert Modal (Existing Subscriptions > Limit) */}
+            {showDowngradeModal && (
+                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-card border rounded-2xl p-8 max-w-md w-full space-y-6 shadow-2xl animate-in zoom-in duration-300">
+                        <div className="text-center space-y-4">
+                            {/* Icon */}
+                            <div className="mx-auto w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-orange-600">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-2xl font-bold tracking-tight">
+                                フリープランの上限を超えています
+                            </h3>
+
+                            {/* Message */}
+                            <div className="space-y-3 text-sm text-muted-foreground">
+                                <p>
+                                    現在、フリープランの上限（5件）を超える<br />
+                                    <span className="font-bold text-foreground">{subscriptions.length}つのサブスクリプション</span>が登録されています。
+                                </p>
+                                <p className="text-base font-medium text-foreground">
+                                    新規登録を行うには、<br />
+                                    登録済みサブスクリプションを<br />
+                                    5件以下になるように整理してください。
+                                </p>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => setShowDowngradeModal(false)}
+                                    className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 transition-colors"
+                                >
+                                    確認しました
                                 </button>
                             </div>
                         </div>

@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
-  const { plan, loading: planLoading } = useUserPlan();
+  const { plan, loading: planLoading, error } = useUserPlan();
 
   useEffect(() => {
     async function fetchUser() {
@@ -98,14 +98,16 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="inline-flex items-center justify-center gap-2 rounded-md text-xs md:text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 md:h-9 px-4 py-2 text-destructive hover:text-destructive"
-            >
-              <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              {loggingOut ? "ログアウト中..." : "ログアウト"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="inline-flex items-center justify-center gap-2 rounded-md text-xs md:text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 md:h-9 px-4 py-2 text-destructive hover:text-destructive"
+              >
+                <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                {loggingOut ? "ログアウト中..." : "ログアウト"}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -143,6 +145,30 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                   <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" /> 高度な分析機能
                 </div>
+
+                {plan?.type === 'premium' && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        toast.loading('管理画面へ移動中...');
+                        const res = await fetch('/api/stripe/portal', {
+                          method: 'POST',
+                        });
+                        if (!res.ok) throw new Error('Failed to create portal session');
+                        const { url } = await res.json();
+                        window.location.href = url;
+                      } catch (error) {
+                        console.error(error);
+                        toast.dismiss();
+                        toast.error('管理画面への移動に失敗しました');
+                      }
+                    }}
+                    className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 transition-colors"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    サブスクリプションの管理（解約・変更）
+                  </button>
+                )}
               </div>
             </div>
 
@@ -277,7 +303,7 @@ export default function SettingsPage() {
             <CategoryManagement />
           </div>
         </section>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

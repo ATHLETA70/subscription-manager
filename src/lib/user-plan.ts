@@ -38,8 +38,8 @@ export async function getUserPlan(supabase: SupabaseClient, userId: string): Pro
 }
 
 // @deprecated Use getUserPlan instead
-export const userPlan = {
-    type: 'free',
-    limit: 5,
-    price: 280
-};
+// export const userPlan = {
+//     type: 'free',
+//     limit: 5,
+//     price: 280
+// };

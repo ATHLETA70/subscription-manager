@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, CreditCard, Settings, Bell, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { userPlan } from "@/lib/user-plan";
+import { useUserPlan } from "@/hooks/use-user-plan";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,6 +21,7 @@ export function Sidebar() {
     const pathname = usePathname();
     const [userEmail, setUserEmail] = useState<string>("");
     const [userInitials, setUserInitials] = useState<string>("U");
+    const { plan, loading } = useUserPlan();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -66,7 +67,7 @@ export function Sidebar() {
                     );
                 })}
 
-                {userPlan.type === 'free' && (
+                {!loading && plan?.type === 'free' && (
                     <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 border border-primary/20">
                         <h4 className="font-semibold text-sm mb-1">Premium にアップグレード</h4>
                         <p className="text-xs text-muted-foreground mb-3">
@@ -125,7 +126,7 @@ export function Sidebar() {
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{userEmail || "Loading..."}</div>
                         <div className="text-xs text-muted-foreground truncate">
-                            {userPlan.type === 'premium' ? 'Premium Plan' : 'Free Plan'}
+                            {loading ? 'Loading...' : (plan?.type === 'premium' ? 'Premium Plan' : 'Free Plan')}
                         </div>
                     </div>
                 </div>
