@@ -29,7 +29,7 @@ function SubscriptionIcon({ sub }: { sub: Subscription }) {
 
     if (sub.image_url && !imageError) {
         return (
-            <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/10 shrink-0 p-1.5">
+            <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/20 dark:border-white/10 shrink-0 p-1.5 shadow-sm">
                 <img
                     src={sub.image_url}
                     alt={sub.name}
@@ -42,10 +42,12 @@ function SubscriptionIcon({ sub }: { sub: Subscription }) {
 
     return (
         <div className={cn(
-            "w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm",
-            // Use a default color if none provided (though our seed data has colors mapped? No, seed data has status/category but not color class)
-            // We might need to map category to color here or just use a default
-            "bg-primary"
+            "w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 shadow-sm",
+            "border border-border/20 dark:border-white/10",
+            // Light mode: primary color with white text
+            "bg-primary text-primary-foreground",
+            // Dark mode: elevated surface with white text for better contrast
+            "dark:bg-gray-700 dark:text-white"
         )}>
             {sub.name.charAt(0)}
         </div>

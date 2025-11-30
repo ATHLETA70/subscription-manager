@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 function SubscriptionIcon({ sub }: { sub: Subscription }) {
     if (sub.image_url) {
         return (
-            <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/10 shrink-0 p-1.5">
+            <div className="w-9 h-9 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/20 dark:border-white/10 shrink-0 p-1.5 shadow-sm">
                 <img
                     src={sub.image_url}
                     alt={sub.name}
@@ -19,7 +19,9 @@ function SubscriptionIcon({ sub }: { sub: Subscription }) {
 
     return (
         <div className={cn(
-            "w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold shrink-0 shadow-sm bg-blue-500"
+            "w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 shadow-sm",
+            "border border-border/20 dark:border-white/10",
+            "bg-blue-500 text-white dark:bg-gray-700 dark:text-white"
         )}>
             {sub.name.charAt(0)}
         </div>

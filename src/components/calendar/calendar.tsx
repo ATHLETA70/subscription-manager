@@ -26,7 +26,7 @@ function SubscriptionIcon({ subscription }: { subscription: Subscription }) {
         >
             {/* アイコン */}
             {subscription.image_url && !imageError ? (
-                <div className="w-3.5 h-3.5 md:w-5 md:h-5 rounded bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                <div className="w-3.5 h-3.5 md:w-5 md:h-5 rounded bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-border/20 dark:border-white/10 p-0.5 shrink-0">
                     <img
                         src={subscription.image_url}
                         alt={subscription.name}
@@ -37,9 +37,9 @@ function SubscriptionIcon({ subscription }: { subscription: Subscription }) {
             ) : (
                 <div
                     className={cn(
-                        "w-3.5 h-3.5 md:w-5 md:h-5 rounded flex items-center justify-center text-white text-[8px] md:text-[10px] font-bold shrink-0",
-                        // Default color if none provided
-                        "bg-primary"
+                        "w-3.5 h-3.5 md:w-5 md:h-5 rounded flex items-center justify-center text-[8px] md:text-[10px] font-bold shrink-0",
+                        "border border-border/20 dark:border-white/10",
+                        "bg-primary text-primary-foreground dark:bg-gray-700 dark:text-white"
                     )}
                 >
                     {subscription.name.charAt(0)}
